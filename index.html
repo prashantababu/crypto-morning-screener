@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Crypto Morning Screener</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface-2: #1c2128;
+    --border: #30363d;
+    --text-primary: #e6edf3;
+    --text-secondary: #8b949e;
+    --text-muted: #6e7681;
+    --green: #3fb950;
+    --green-bg: rgba(63,185,80,0.12);
+    --red: #f85149;
+    --red-bg: rgba(248,81,73,0.12);
+    --amber: #d29922;
+    --blue: #58a6ff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 14px;
+    padding: 1.5rem;
+  }
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 12px; }
+  .header h1 { font-size: 20px; font-weight: 600; }
+  .api-status { font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); }
+  .dot.ok { background: var(--green); }
+  .dot.err { background: var(--red); }
+  .config-bar { display: flex; gap: 10px; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; }
+  .config-bar input { background: var(--surface); border: 1px solid var(--border); color: var(--text-primary); padding: 6px 10px; border-radius: 6px; font-size: 13px; width: 220px; }
+  .config-bar button { background: var(--surface-2); border: 1px solid var(--border); color: var(--text-primary); padding: 6px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; }
+  .config-bar button:hover { border-color: var(--blue); }
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 1.25rem; overflow-x: auto; }
+  .tab { padding: 10px 16px; font-size: 13px; font-weight: 500; color: var(--text-secondary); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; }
+  .tab.active { color: var(--text-primary); border-bottom-color: var(--blue); }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .heatmap-grid { display: flex; flex-direction: column; gap: 18px; }
+  .heatmap-cat-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
+  .heatmap-cells { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+  .cell { border-radius: 8px; padding: 10px; cursor: pointer; border: 1px solid var(--border); transition: transform .1s; }
+  .cell:hover { transform: translateY(-2px); }
+  .cell-sym { font-size: 13px; font-weight: 600; }
+  .cell-chg { font-size: 16px; font-weight: 700; margin-top: 4px; }
+  .cell-vol { font-size: 10px; color: var(--text-secondary); margin-top: 2px; }
+  .cell-badge { font-size: 9px; padding: 1px 6px; border-radius: 4px; margin-top: 6px; display: inline-block; font-weight: 600; }
+  table.scan-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.scan-table th { text-align: left; padding: 8px 10px; color: var(--text-secondary); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); }
+  table.scan-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  table.scan-table tr:hover { background: var(--surface); }
+  .dir-pill { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
+  .dir-long { background: var(--green-bg); color: var(--green); }
+  .dir-short { background: var(--red-bg); color: var(--red); }
+  .dir-neutral { background: var(--surface-2); color: var(--text-muted); }
+  .conf-bar-track { width: 60px; height: 5px; background: var(--surface-2); border-radius: 3px; overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 6px; }
+  .conf-bar-fill { height: 100%; border-radius: 3px; }
+  .num { font-family: "SF Mono", Consolas, monospace; font-size: 12px; }
+  .target-pill { font-size: 11px; padding: 1px 6px; border-radius: 4px; background: var(--surface-2); color: var(--text-secondary); margin-right: 3px; }
+  .loading, .empty-state { text-align: center; padding: 3rem; color: var(--text-secondary); font-size: 13px; }
+  .reasons { font-size: 11px; color: var(--text-muted); max-width: 240px; }
+  .mode-desc { font-size: 12px; color: var(--text-secondary); margin-bottom: 1rem; }
+</style>
+</head>
+<body>
+<h2 class="sr-only">Crypto Morning Screener dashboard showing live heatmap, intraday, swing, BTST, range, and investment signals across a 44-coin watchlist</h2>
+
+<div class="header">
+  <h1>Crypto Morning Screener</h1>
+  <div class="api-status">
+    <span class="dot" id="status-dot"></span>
+    <span id="status-text">checking backend...</span>
+  </div>
+</div>
+
+<div class="config-bar">
+  <input type="text" id="api-base" placeholder="https://crypto-morning-screener-api.onrender.com" value="https://crypto-morning-screener-api.onrender.com">
+  <button id="btn-connect">Connect</button>
+  <button id="btn-refresh">Refresh now</button>
+  <label style="font-size:12px;color:var(--text-secondary);display:flex;align-items:center;gap:6px;">
+    Auto-refresh
+    <select id="auto-refresh-select" style="background:var(--surface);border:1px solid var(--border);color:var(--text-primary);padding:5px 8px;border-radius:6px;font-size:13px;">
+      <option value="0">Off</option>
+      <option value="60000">Every 1 min</option>
+      <option value="180000" selected>Every 3 min</option>
+      <option value="300000">Every 5 min</option>
+      <option value="600000">Every 10 min</option>
+    </select>
+  </label>
+  <span id="last-updated" style="font-size:11px;color:var(--text-muted);"></span>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-panel="heatmap">Heatmap</div>
+  <div class="tab" data-panel="intraday">Intraday</div>
+  <div class="tab" data-panel="btst">BTST</div>
+  <div class="tab" data-panel="swing">Swing</div>
+  <div class="tab" data-panel="range">Range</div>
+  <div class="tab" data-panel="investment">Investment</div>
+</div>
+
+<div class="panel active" id="panel-heatmap">
+  <p class="mode-desc">24h % change across your watchlist, grouped by risk category. Click any coin to scan it.</p>
+  <div id="heatmap-content" class="loading">Connect to backend to load heatmap...</div>
+</div>
+
+<div class="panel" id="panel-intraday"><p class="mode-desc">15m candles, VWAP + EMA9/21 + RSI, same-day exit, no overnight hold.</p><div id="scan-intraday" class="loading">Connect to backend to scan...</div></div>
+<div class="panel" id="panel-btst"><p class="mode-desc">1h candles, EMA + MACD + OBV momentum, buy today, sell tomorrow.</p><div id="scan-btst" class="loading">Connect to backend to scan...</div></div>
+<div class="panel" id="panel-swing"><p class="mode-desc">4h candles, EMA21/50 trend + MACD + BB breakout, 2-10 day hold.</p><div id="scan-swing" class="loading">Connect to backend to scan...</div></div>
+<div class="panel" id="panel-range"><p class="mode-desc">1h candles, Bollinger Band mean-reversion, suppressed during strong trends.</p><div id="scan-range" class="loading">Connect to backend to scan...</div></div>
+<div class="panel" id="panel-investment"><p class="mode-desc">1d candles, long-only trend + structure, weeks-to-months horizon.</p><div id="scan-investment" class="loading">Connect to backend to scan...</div></div>
+
+<script>
+let API_BASE = document.getElementById('api-base').value;
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.onclick = () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-' + tab.dataset.panel).classList.add('active');
+    if (tab.dataset.panel !== 'heatmap') loadScan(tab.dataset.panel);
+    setLastUpdated();
+  };
+});
+
+document.getElementById('btn-connect').onclick = () => {
+  API_BASE = document.getElementById('api-base').value.replace(/\/$/, '');
+  checkHealth();
+};
+document.getElementById('btn-refresh').onclick = () => refreshActivePanel();
+
+let autoRefreshTimer = null;
+let refreshInFlight = false;
+
+function refreshActivePanel() {
+  if (refreshInFlight) return; // skip this tick if the previous refresh hasn't finished
+  refreshInFlight = true;
+  const activeTab = document.querySelector('.tab.active').dataset.panel;
+  const done = () => { refreshInFlight = false; setLastUpdated(); };
+  if (activeTab === 'heatmap') {
+    loadHeatmap().then(done).catch(done);
+  } else {
+    loadScan(activeTab).then(done).catch(done);
+  }
+}
+
+function setLastUpdated() {
+  const now = new Date();
+  document.getElementById('last-updated').textContent =
+    'updated ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function setupAutoRefresh() {
+  const select = document.getElementById('auto-refresh-select');
+  const apply = () => {
+    if (autoRefreshTimer) {
+      clearInterval(autoRefreshTimer);
+      autoRefreshTimer = null;
+    }
+    const ms = parseInt(select.value, 10);
+    if (ms > 0) {
+      autoRefreshTimer = setInterval(refreshActivePanel, ms);
+    }
+  };
+  select.onchange = apply;
+  apply(); // start with the default selection (3 min) as soon as the page loads
+}
+setupAutoRefresh();
+
+async function checkHealth() {
+  const dot = document.getElementById('status-dot');
+  const text = document.getElementById('status-text');
+  try {
+    const res = await fetch(API_BASE + '/api/health');
+    const data = await res.json();
+    if (data.status === 'ok') {
+      dot.className = 'dot ok';
+      text.textContent = 'connected';
+      loadHeatmap();
+    } else {
+      throw new Error('unexpected response');
+    }
+  } catch (e) {
+    dot.className = 'dot err';
+    text.textContent = 'backend unreachable, start Flask server (python backend/app.py)';
+  }
+}
+
+function pctColor(pct) {
+  if (pct === null || pct === undefined) return { bg: 'var(--surface-2)', fg: 'var(--text-muted)' };
+  const intensity = Math.min(Math.abs(pct) / 10, 1);
+  if (pct >= 0) return { bg: `rgba(63,185,80,${0.08 + intensity * 0.25})`, fg: 'var(--green)' };
+  return { bg: `rgba(248,81,73,${0.08 + intensity * 0.25})`, fg: 'var(--red)' };
+}
+
+async function loadHeatmap() {
+  const el = document.getElementById('heatmap-content');
+  el.innerHTML = '<div class="loading">Loading heatmap...</div>';
+  try {
+    const res = await fetch(API_BASE + '/api/heatmap');
+    const data = await res.json();
+    let html = '<div class="heatmap-grid">';
+    for (const [category, cells] of Object.entries(data)) {
+      html += `<div><div class="heatmap-cat-label">${category}</div><div class="heatmap-cells">`;
+      cells.forEach(c => {
+        const colors = pctColor(c.change_24h_pct);
+        const chg = c.change_24h_pct !== null ? (c.change_24h_pct >= 0 ? '+' : '') + c.change_24h_pct.toFixed(2) + '%' : '—';
+        const vol = c.volume_24h !== null ? '$' + Math.round(c.volume_24h).toLocaleString() : '';
+        let badge = '';
+        if (c.signal_direction === 'long') badge = '<span class="cell-badge dir-long">LONG ' + (c.signal_confidence||0) + '%</span>';
+        else if (c.signal_direction === 'short') badge = '<span class="cell-badge dir-short">SHORT ' + (c.signal_confidence||0) + '%</span>';
+        html += `<div class="cell" style="background:${colors.bg}" onclick="scanSymbol('${c.symbol}')">
+          <div class="cell-sym">${c.symbol.replace('USDT','')}</div>
+          <div class="cell-chg" style="color:${colors.fg}">${chg}</div>
+          <div class="cell-vol">${vol}</div>
+          ${badge}
+        </div>`;
+      });
+      html += '</div></div>';
+    }
+    html += '</div>';
+    el.innerHTML = html;
+  } catch (e) {
+    el.innerHTML = `<div class="empty-state">Failed to load heatmap: ${e.message}</div>`;
+  }
+}
+
+function scanSymbol(symbol) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelector('.tab[data-panel="intraday"]').classList.add('active');
+  document.getElementById('panel-intraday').classList.add('active');
+  loadScan('intraday', symbol);
+}
+
+function confColor(pct) {
+  if (pct >= 70) return 'var(--green)';
+  if (pct >= 40) return 'var(--amber)';
+  return 'var(--text-muted)';
+}
+
+async function loadScan(mode, highlightSymbol) {
+  const el = document.getElementById('scan-' + mode);
+  el.innerHTML = '<div class="loading">Scanning watchlist (this can take a few seconds across 44 coins)...</div>';
+  try {
+    const res = await fetch(`${API_BASE}/api/scan/universe?modes=${mode}`);
+    const data = await res.json();
+    const rows = [];
+    for (const [symbol, result] of Object.entries(data.results)) {
+      const r = result.results[mode];
+      if (!r || r.error) continue;
+      rows.push({ symbol, ...r });
+    }
+    rows.sort((a, b) => {
+      if (a.direction !== 'neutral' && b.direction === 'neutral') return -1;
+      if (a.direction === 'neutral' && b.direction !== 'neutral') return 1;
+      return (b.confidence_pct || 0) - (a.confidence_pct || 0);
+    });
+
+    let html = '<table class="scan-table"><thead><tr>' +
+      '<th>Symbol</th><th>Direction</th><th>Confidence</th><th>Entry</th><th>Stop loss</th>' +
+      '<th>Target 1</th><th>Target 2</th><th>Target 3</th><th>RSI</th><th>Why</th></tr></thead><tbody>';
+
+    rows.forEach(r => {
+      const dirClass = r.direction === 'long' ? 'dir-long' : (r.direction === 'short' ? 'dir-short' : 'dir-neutral');
+      const lv = r.levels;
+      const conf = r.confidence_pct || 0;
+      const highlightStyle = (highlightSymbol && r.symbol === highlightSymbol) ? 'background:var(--surface-2)' : '';
+      html += `<tr style="${highlightStyle}">
+        <td><strong>${r.symbol.replace('USDT','')}</strong></td>
+        <td><span class="dir-pill ${dirClass}">${r.direction.toUpperCase()}</span></td>
+        <td><span class="conf-bar-track"><span class="conf-bar-fill" style="width:${conf}%;background:${confColor(conf)}"></span></span>${conf}%</td>
+        <td class="num">${lv ? lv.entry : '—'}</td>
+        <td class="num" style="color:var(--red)">${lv ? lv.stop_loss : '—'}</td>
+        <td class="num" style="color:var(--green)">${lv ? lv.target1 : '—'}</td>
+        <td class="num" style="color:var(--green)">${lv ? lv.target2 : '—'}</td>
+        <td class="num" style="color:var(--green)">${lv ? lv.target3 : '—'}</td>
+        <td class="num">${r.indicators ? r.indicators.rsi14 ?? '—' : '—'}</td>
+        <td class="reasons">${(r.reasons||[]).join(', ')}</td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    if (!rows.length) html = '<div class="empty-state">No data returned. Check backend logs.</div>';
+    el.innerHTML = html;
+  } catch (e) {
+    el.innerHTML = `<div class="empty-state">Scan failed: ${e.message}</div>`;
+  }
+}
+
+checkHealth();
+</script>
+</body>
+</html>
