@@ -1,0 +1,41 @@
+name: Keep Render backend awake
+
+# Pings the deployed Flask backend's /api/health endpoint every 10 minutes
+# so Render's free tier doesn't spin it down after 15 minutes of inactivity.
+#
+# Setup:
+#   1. Deploy the backend to Render first, get its URL
+#      (e.g. https://crypto-morning-screener-api.onrender.com)
+#   2. In this GitHub repo: Settings -> Secrets and variables -> Actions
+#      -> New repository secret -> name it RENDER_APP_URL, paste the URL
+#   3. Push this file -- GitHub will start running it on the schedule below
+#      automatically, no further action needed.
+#
+# Note: GitHub Actions free tier gives 2,000 minutes/month for private repos
+# (unlimited for public repos). Each run here takes a few seconds, so this
+# uses a negligible amount of that budget either way.
+#
+# Honesty check: 10-minute pings comfortably beat Render's 15-minute sleep
+# window. Running the backend 24/7 uses ~720 of Render's 750 free
+# instance-hours/month -- this fits, but leaves little headroom if you run
+# other free services in the same Render workspace.
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping backend health endpoint
+        run: |
+          if [ -z "${{ secrets.RENDER_APP_URL }}" ]; then
+            echo "RENDER_APP_URL secret is not set -- skipping ping."
+            echo "Set it in Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          curl -sf "${{ secrets.RENDER_APP_URL }}/api/health" \
+            && echo "Ping OK" \
+            || echo "Ping failed (backend may be cold-starting -- this is usually fine on the next run)"
