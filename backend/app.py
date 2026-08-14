@@ -25,7 +25,7 @@ import time
 import logging
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-
+from smc_engine import run_smc_scan
 # Make sibling subpackages importable with flat module names (sources.*,
 # strategies.*) regardless of the working directory this is launched from.
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -151,6 +151,11 @@ def scan_universe():
     symbols = all_symbols()
     needed_intervals = {MODE_CONFIG[m]["interval"]: MODE_CONFIG[m]["limit"] for m in modes}
 
+    # SMC engine always needs 1h candles (65 bars = ~2.7 days of history).
+    # Guarantee they are fetched even when no selected mode uses 1h interval
+    # (e.g. intraday uses 15m, swing uses 4h).
+    needed_intervals["1h"] = max(needed_intervals.get("1h", 0), 65)
+
     # Fetch each required interval for the whole universe in parallel (one
     # waterfall pass per interval), then run the strategy engine per symbol.
     interval_data = {}
@@ -163,7 +168,27 @@ def scan_universe():
         for interval in needed_intervals:
             payload = interval_data[interval].get(symbol, {})
             candles_by_interval[interval] = payload.get("candles")
-        results[symbol] = run_scan(symbol, candles_by_interval, modes=modes)
+
+        # Traditional indicator scan (RSI / EMA / MACD / BB / ATR / VWAP)
+        scan_result = run_scan(symbol, candles_by_interval, modes=modes)
+
+        # SMC signal engine (Order Blocks / FVG / BOS-CHoCH / Liquidity /
+        # Supply-Demand / Fibonacci OTE / Volume Profile / Premium-Discount).
+        # Runs on 1h candles independently of the mode selected above.
+        try:
+            candles_1h = candles_by_interval.get("1h") or []
+            scan_result["smc"] = run_smc_scan(symbol, candles_1h)
+        except Exception as e:
+            logger.warning(f"SMC scan failed for {symbol}: {e}")
+            scan_result["smc"] = {
+                "direction": "neutral",
+                "confidence": 0,
+                "confidence_label": "SMC error — check logs",
+                "reasons": [str(e)],
+                "levels": {},
+            }
+
+        results[symbol] = scan_result
 
     return jsonify({"modes": modes, "results": results, "count": len(symbols)})
 
