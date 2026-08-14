@@ -21,7 +21,7 @@ SYMBOL NOTES
   - delta  : exact symbol to use on Delta Exchange (search this in Markets tab)
   - tv     : TradingView symbol for charting (import into watchlist)
   - lev    : Delta's max leverage — use 2-5x at your ₹2500/trade capital size
-  - opt    : True if Delta India lists options on this coin (BTC/ETH/SOL/LTC/LINK/XRP)
+  - options: True if Delta India lists options on this coin (BTC/ETH/SOL/LTC/LINK/XRP)
 
 XSTOCK NOTES (NEW ADDITIONS)
   SPCXXUSD  SpaceX   — private company, xToken tracks valuation. $437K 24h vol. 25x lev.
@@ -51,18 +51,18 @@ COIN_UNIVERSE = {
     # Best for: large size, options strategies, safest intraday
     # ---------------------------------------------------------------
     "Tier1": [
-        {"symbol":"BTCUSDT",   "name":"Bitcoin",        "delta":"BTCUSD",   "lev":100,"opt":True,  "tv":"BINANCE:BTCUSDT"},
-        {"symbol":"ETHUSDT",   "name":"Ethereum",       "delta":"ETHUSD",   "lev":100,"opt":True,  "tv":"BINANCE:ETHUSDT"},
-        {"symbol":"SOLUSDT",   "name":"Solana",         "delta":"SOLUSD",   "lev":100,"opt":True,  "tv":"BINANCE:SOLUSDT"},
-        {"symbol":"BNBUSDT",   "name":"BNB",            "delta":"BNBUSD",   "lev":50, "opt":False, "tv":"BINANCE:BNBUSDT"},
-        {"symbol":"XRPUSDT",   "name":"Ripple",         "delta":"XRPUSD",   "lev":100,"opt":True,  "tv":"BINANCE:XRPUSDT"},
-        {"symbol":"ADAUSDT",   "name":"Cardano",        "delta":"ADAUSD",   "lev":50, "opt":False, "tv":"BINANCE:ADAUSDT"},
-        {"symbol":"AVAXUSDT",  "name":"Avalanche",      "delta":"AVAXUSD",  "lev":100,"opt":False, "tv":"BINANCE:AVAXUSDT"},
-        {"symbol":"DOGEUSDT",  "name":"Dogecoin",       "delta":"DOGEUSD",  "lev":100,"opt":False, "tv":"BINANCE:DOGEUSDT"},
-        {"symbol":"LTCUSDT",   "name":"Litecoin",       "delta":"LTCUSD",   "lev":100,"opt":True,  "tv":"BINANCE:LTCUSDT"},
-        {"symbol":"LINKUSDT",  "name":"Chainlink",      "delta":"LINKUSD",  "lev":100,"opt":True,  "tv":"BINANCE:LINKUSDT"},
-        {"symbol":"TRXUSDT",   "name":"Tron",           "delta":"TRXUSD",   "lev":50, "opt":False, "tv":"BINANCE:TRXUSDT"},
-        {"symbol":"DOTUSDT",   "name":"Polkadot",       "delta":"DOTUSD",   "lev":50, "opt":False, "tv":"BINANCE:DOTUSDT"},
+        {"symbol":"BTCUSDT",   "name":"Bitcoin",        "delta":"BTCUSD",   "lev":100,"options":True,  "tv":"BINANCE:BTCUSDT"},
+        {"symbol":"ETHUSDT",   "name":"Ethereum",       "delta":"ETHUSD",   "lev":100,"options":True,  "tv":"BINANCE:ETHUSDT"},
+        {"symbol":"SOLUSDT",   "name":"Solana",         "delta":"SOLUSD",   "lev":100,"options":True,  "tv":"BINANCE:SOLUSDT"},
+        {"symbol":"BNBUSDT",   "name":"BNB",            "delta":"BNBUSD",   "lev":50, "options":False, "tv":"BINANCE:BNBUSDT"},
+        {"symbol":"XRPUSDT",   "name":"Ripple",         "delta":"XRPUSD",   "lev":100,"options":True,  "tv":"BINANCE:XRPUSDT"},
+        {"symbol":"ADAUSDT",   "name":"Cardano",        "delta":"ADAUSD",   "lev":50, "options":False, "tv":"BINANCE:ADAUSDT"},
+        {"symbol":"AVAXUSDT",  "name":"Avalanche",      "delta":"AVAXUSD",  "lev":100,"options":False, "tv":"BINANCE:AVAXUSDT"},
+        {"symbol":"DOGEUSDT",  "name":"Dogecoin",       "delta":"DOGEUSD",  "lev":100,"options":False, "tv":"BINANCE:DOGEUSDT"},
+        {"symbol":"LTCUSDT",   "name":"Litecoin",       "delta":"LTCUSD",   "lev":100,"options":True,  "tv":"BINANCE:LTCUSDT"},
+        {"symbol":"LINKUSDT",  "name":"Chainlink",      "delta":"LINKUSD",  "lev":100,"options":True,  "tv":"BINANCE:LINKUSDT"},
+        {"symbol":"TRXUSDT",   "name":"Tron",           "delta":"TRXUSD",   "lev":50, "options":False, "tv":"BINANCE:TRXUSDT"},
+        {"symbol":"DOTUSDT",   "name":"Polkadot",       "delta":"DOTUSD",   "lev":50, "options":False, "tv":"BINANCE:DOTUSDT"},
     ],
 
     # ---------------------------------------------------------------
@@ -70,28 +70,28 @@ COIN_UNIVERSE = {
     # Best for: intraday momentum + BTST, good fill quality
     # ---------------------------------------------------------------
     "Midcap": [
-        {"symbol":"MATICUSDT", "name":"Polygon",        "delta":"MATICUSD", "lev":50, "opt":False, "tv":"BINANCE:MATICUSDT"},
-        {"symbol":"NEARUSDT",  "name":"NEAR Protocol",  "delta":"NEARUSD",  "lev":50, "opt":False, "tv":"BINANCE:NEARUSDT"},
-        {"symbol":"ARBUSDT",   "name":"Arbitrum",       "delta":"ARBUSD",   "lev":50, "opt":False, "tv":"BINANCE:ARBUSDT"},
-        {"symbol":"OPUSDT",    "name":"Optimism",       "delta":"OPUSD",    "lev":50, "opt":False, "tv":"BINANCE:OPUSDT"},
-        {"symbol":"AAVEUSDT",  "name":"Aave",           "delta":"AAVEUSD",  "lev":20, "opt":False, "tv":"BINANCE:AAVEUSDT"},
-        {"symbol":"UNIUSDT",   "name":"Uniswap",        "delta":"UNIUSD",   "lev":50, "opt":False, "tv":"BINANCE:UNIUSDT"},
-        {"symbol":"ATOMUSDT",  "name":"Cosmos",         "delta":"ATOMUSD",  "lev":50, "opt":False, "tv":"BINANCE:ATOMUSDT"},
-        {"symbol":"INJUSDT",   "name":"Injective",      "delta":"INJUSD",   "lev":20, "opt":False, "tv":"BINANCE:INJUSDT"},
-        {"symbol":"SUIUSDT",   "name":"Sui",            "delta":"SUIUSD",   "lev":50, "opt":False, "tv":"BINANCE:SUIUSDT"},
-        {"symbol":"APTUSDT",   "name":"Aptos",          "delta":"APTUSD",   "lev":50, "opt":False, "tv":"BINANCE:APTUSDT"},
-        {"symbol":"SEIUSDT",   "name":"Sei",            "delta":"SEIUSD",   "lev":20, "opt":False, "tv":"BINANCE:SEIUSDT"},
-        {"symbol":"FTMUSDT",   "name":"Fantom/Sonic",   "delta":"FTMUSD",   "lev":50, "opt":False, "tv":"BINANCE:FTMUSDT"},
-        {"symbol":"HYPEUSDT",  "name":"Hyperliquid",    "delta":"HYPEUSD",  "lev":20, "opt":False, "tv":"BYBIT:HYPEUSDT"},
-        {"symbol":"STXUSDT",   "name":"Stacks",         "delta":"STXUSD",   "lev":20, "opt":False, "tv":"BINANCE:STXUSDT"},
-        {"symbol":"MOVEUSDT",  "name":"Movement",       "delta":"MOVEUSD",  "lev":20, "opt":False, "tv":"BINANCE:MOVEUSDT"},
-        {"symbol":"MANTAUSDT", "name":"Manta Network",  "delta":"MANTAUSD", "lev":20, "opt":False, "tv":"BINANCE:MANTAUSDT"},
-        {"symbol":"LDOUSDT",   "name":"Lido DAO",       "delta":"LDOUSD",   "lev":20, "opt":False, "tv":"BINANCE:LDOUSDT"},
-        {"symbol":"IMXUSDT",   "name":"Immutable X",    "delta":"IMXUSD",   "lev":20, "opt":False, "tv":"BINANCE:IMXUSDT"},
-        {"symbol":"DYDXUSDT",  "name":"dYdX",           "delta":"DYDXUSD",  "lev":20, "opt":False, "tv":"BINANCE:DYDXUSDT"},
-        {"symbol":"KASUSDT",   "name":"Kaspa",          "delta":"KASUSD",   "lev":20, "opt":False, "tv":"BYBIT:KASUSDT"},
-        {"symbol":"WLDUSDT",   "name":"Worldcoin",      "delta":"WLDUSD",   "lev":20, "opt":False, "tv":"BINANCE:WLDUSDT"},
-        {"symbol":"JUPUSDT",   "name":"Jupiter",        "delta":"JUPUSD",   "lev":20, "opt":False, "tv":"BINANCE:JUPUSDT"},
+        {"symbol":"MATICUSDT", "name":"Polygon",        "delta":"MATICUSD", "lev":50, "options":False, "tv":"BINANCE:MATICUSDT"},
+        {"symbol":"NEARUSDT",  "name":"NEAR Protocol",  "delta":"NEARUSD",  "lev":50, "options":False, "tv":"BINANCE:NEARUSDT"},
+        {"symbol":"ARBUSDT",   "name":"Arbitrum",       "delta":"ARBUSD",   "lev":50, "options":False, "tv":"BINANCE:ARBUSDT"},
+        {"symbol":"OPUSDT",    "name":"Optimism",       "delta":"OPUSD",    "lev":50, "options":False, "tv":"BINANCE:OPUSDT"},
+        {"symbol":"AAVEUSDT",  "name":"Aave",           "delta":"AAVEUSD",  "lev":20, "options":False, "tv":"BINANCE:AAVEUSDT"},
+        {"symbol":"UNIUSDT",   "name":"Uniswap",        "delta":"UNIUSD",   "lev":50, "options":False, "tv":"BINANCE:UNIUSDT"},
+        {"symbol":"ATOMUSDT",  "name":"Cosmos",         "delta":"ATOMUSD",  "lev":50, "options":False, "tv":"BINANCE:ATOMUSDT"},
+        {"symbol":"INJUSDT",   "name":"Injective",      "delta":"INJUSD",   "lev":20, "options":False, "tv":"BINANCE:INJUSDT"},
+        {"symbol":"SUIUSDT",   "name":"Sui",            "delta":"SUIUSD",   "lev":50, "options":False, "tv":"BINANCE:SUIUSDT"},
+        {"symbol":"APTUSDT",   "name":"Aptos",          "delta":"APTUSD",   "lev":50, "options":False, "tv":"BINANCE:APTUSDT"},
+        {"symbol":"SEIUSDT",   "name":"Sei",            "delta":"SEIUSD",   "lev":20, "options":False, "tv":"BINANCE:SEIUSDT"},
+        {"symbol":"FTMUSDT",   "name":"Fantom/Sonic",   "delta":"FTMUSD",   "lev":50, "options":False, "tv":"BINANCE:FTMUSDT"},
+        {"symbol":"HYPEUSDT",  "name":"Hyperliquid",    "delta":"HYPEUSD",  "lev":20, "options":False, "tv":"BYBIT:HYPEUSDT"},
+        {"symbol":"STXUSDT",   "name":"Stacks",         "delta":"STXUSD",   "lev":20, "options":False, "tv":"BINANCE:STXUSDT"},
+        {"symbol":"MOVEUSDT",  "name":"Movement",       "delta":"MOVEUSD",  "lev":20, "options":False, "tv":"BINANCE:MOVEUSDT"},
+        {"symbol":"MANTAUSDT", "name":"Manta Network",  "delta":"MANTAUSD", "lev":20, "options":False, "tv":"BINANCE:MANTAUSDT"},
+        {"symbol":"LDOUSDT",   "name":"Lido DAO",       "delta":"LDOUSD",   "lev":20, "options":False, "tv":"BINANCE:LDOUSDT"},
+        {"symbol":"IMXUSDT",   "name":"Immutable X",    "delta":"IMXUSD",   "lev":20, "options":False, "tv":"BINANCE:IMXUSDT"},
+        {"symbol":"DYDXUSDT",  "name":"dYdX",           "delta":"DYDXUSD",  "lev":20, "options":False, "tv":"BINANCE:DYDXUSDT"},
+        {"symbol":"KASUSDT",   "name":"Kaspa",          "delta":"KASUSD",   "lev":20, "options":False, "tv":"BYBIT:KASUSDT"},
+        {"symbol":"WLDUSDT",   "name":"Worldcoin",      "delta":"WLDUSD",   "lev":20, "options":False, "tv":"BINANCE:WLDUSDT"},
+        {"symbol":"JUPUSDT",   "name":"Jupiter",        "delta":"JUPUSD",   "lev":20, "options":False, "tv":"BINANCE:JUPUSDT"},
     ],
 
     # ---------------------------------------------------------------
@@ -99,19 +99,19 @@ COIN_UNIVERSE = {
     # Intraday only. No overnight holds. Strict stop loss.
     # ---------------------------------------------------------------
     "HighRisk": [
-        {"symbol":"WIFUSDT",   "name":"dogwifhat",          "delta":"WIFUSD",    "lev":20,"opt":False,"tv":"BINANCE:WIFUSDT"},
-        {"symbol":"BONKUSDT",  "name":"Bonk",               "delta":"BONKUSD",   "lev":20,"opt":False,"tv":"BINANCE:BONKUSDT"},
-        {"symbol":"PEPEUSDT",  "name":"Pepe",               "delta":"PEPEUSD",   "lev":50,"opt":False,"tv":"BINANCE:PEPEUSDT"},
-        {"symbol":"FLOKIUSDT", "name":"Floki",              "delta":"FLOKIUSD",  "lev":20,"opt":False,"tv":"BINANCE:FLOKIUSDT"},
-        {"symbol":"SHIBUSDT",  "name":"Shiba Inu",          "delta":"SHIBUSD",   "lev":50,"opt":False,"tv":"BINANCE:SHIBUSDT"},
-        {"symbol":"DOGSUSDT",  "name":"DOGS",               "delta":"DOGSUSD",   "lev":20,"opt":False,"tv":"BYBIT:DOGSUSDT"},
-        {"symbol":"BRETTUSDT", "name":"Brett",              "delta":"BRETTUSD",  "lev":20,"opt":False,"tv":"BYBIT:BRETTUSDT"},
-        {"symbol":"POPCATUSDT","name":"Popcat",             "delta":"POPCATUSD", "lev":20,"opt":False,"tv":"BINANCE:POPCATUSDT"},
-        {"symbol":"GOATUSDT",  "name":"Goatseus Maximus",   "delta":"GOATUSD",   "lev":20,"opt":False,"tv":"BYBIT:GOATUSDT"},
-        {"symbol":"MEWUSDT",   "name":"cat in dogs world",  "delta":"MEWUSD",    "lev":20,"opt":False,"tv":"BYBIT:MEWUSDT"},
-        {"symbol":"PNUTUSDT",  "name":"Peanut the Squirrel","delta":"PNUTUSD",   "lev":20,"opt":False,"tv":"BINANCE:PNUTUSDT"},
-        {"symbol":"MEMEUSDT",  "name":"Memecoin",           "delta":"MEMEUSD",   "lev":20,"opt":False,"tv":"BINANCE:MEMEUSDT"},
-        {"symbol":"NOTUSDT",   "name":"Notcoin",            "delta":"NOTUSD",    "lev":20,"opt":False,"tv":"BINANCE:NOTUSDT"},
+        {"symbol":"WIFUSDT",   "name":"dogwifhat",          "delta":"WIFUSD",    "lev":20,"options":False,"tv":"BINANCE:WIFUSDT"},
+        {"symbol":"BONKUSDT",  "name":"Bonk",               "delta":"BONKUSD",   "lev":20,"options":False,"tv":"BINANCE:BONKUSDT"},
+        {"symbol":"PEPEUSDT",  "name":"Pepe",               "delta":"PEPEUSD",   "lev":50,"options":False,"tv":"BINANCE:PEPEUSDT"},
+        {"symbol":"FLOKIUSDT", "name":"Floki",              "delta":"FLOKIUSD",  "lev":20,"options":False,"tv":"BINANCE:FLOKIUSDT"},
+        {"symbol":"SHIBUSDT",  "name":"Shiba Inu",          "delta":"SHIBUSD",   "lev":50,"options":False,"tv":"BINANCE:SHIBUSDT"},
+        {"symbol":"DOGSUSDT",  "name":"DOGS",               "delta":"DOGSUSD",   "lev":20,"options":False,"tv":"BYBIT:DOGSUSDT"},
+        {"symbol":"BRETTUSDT", "name":"Brett",              "delta":"BRETTUSD",  "lev":20,"options":False,"tv":"BYBIT:BRETTUSDT"},
+        {"symbol":"POPCATUSDT","name":"Popcat",             "delta":"POPCATUSD", "lev":20,"options":False,"tv":"BINANCE:POPCATUSDT"},
+        {"symbol":"GOATUSDT",  "name":"Goatseus Maximus",   "delta":"GOATUSD",   "lev":20,"options":False,"tv":"BYBIT:GOATUSDT"},
+        {"symbol":"MEWUSDT",   "name":"cat in dogs world",  "delta":"MEWUSD",    "lev":20,"options":False,"tv":"BYBIT:MEWUSDT"},
+        {"symbol":"PNUTUSDT",  "name":"Peanut the Squirrel","delta":"PNUTUSD",   "lev":20,"options":False,"tv":"BINANCE:PNUTUSDT"},
+        {"symbol":"MEMEUSDT",  "name":"Memecoin",           "delta":"MEMEUSD",   "lev":20,"options":False,"tv":"BINANCE:MEMEUSDT"},
+        {"symbol":"NOTUSDT",   "name":"Notcoin",            "delta":"NOTUSD",    "lev":20,"options":False,"tv":"BINANCE:NOTUSDT"},
     ],
 
     # ---------------------------------------------------------------
@@ -120,18 +120,18 @@ COIN_UNIVERSE = {
     # Small size only. Spreads can be wide — use limit orders.
     # ---------------------------------------------------------------
     "Degen2": [
-        {"symbol":"FARTCOINUSDT","name":"Fartcoin",       "delta":"FARTCOINUSD","lev":20,"opt":False,"tv":"BYBIT:FARTCOINUSDT"},
-        {"symbol":"PENGUUSDT",  "name":"Pudgy Penguins",  "delta":"PENGUUSD",   "lev":20,"opt":False,"tv":"BINANCE:PENGUUSDT"},
-        {"symbol":"TRUMPUSDT",  "name":"Official Trump",  "delta":"TRUMPUSD",   "lev":20,"opt":False,"tv":"BINANCE:TRUMPUSDT"},
-        {"symbol":"SPXUSDT",    "name":"SPX6900",         "delta":"SPXUSD",     "lev":20,"opt":False,"tv":"BYBIT:SPXUSDT"},
-        {"symbol":"TURBOUSDT",  "name":"Turbo",           "delta":"TURBOUSD",   "lev":20,"opt":False,"tv":"BYBIT:TURBOUSDT"},
-        {"symbol":"BLURUSDT",   "name":"Blur",            "delta":"BLURUSD",    "lev":20,"opt":False,"tv":"BINANCE:BLURUSDT"},
-        {"symbol":"LISTAUSDT",  "name":"Lista DAO",       "delta":"LISTAUSD",   "lev":20,"opt":False,"tv":"BINANCE:LISTAUSDT"},
-        {"symbol":"XAIUSDT",    "name":"Xai Gaming",      "delta":"XAIUSD",     "lev":20,"opt":False,"tv":"BINANCE:XAIUSDT"},
-        {"symbol":"USUALUSDT",  "name":"Usual",           "delta":"USUALUSD",   "lev":20,"opt":False,"tv":"BINANCE:USUALUSDT"},
-        {"symbol":"CROSSUSDT",  "name":"Cross",           "delta":"CROSSUSD",   "lev":20,"opt":False,"tv":"BYBIT:CROSSUSDT"},
-        {"symbol":"SIGNUSDT",   "name":"Sign",            "delta":"SIGNUSD",    "lev":20,"opt":False,"tv":"BINANCE:SIGNUSDT"},
-        {"symbol":"ACEUSDT",    "name":"Fusionist",       "delta":"ACEUSD",     "lev":20,"opt":False,"tv":"BINANCE:ACEUSDT"},
+        {"symbol":"FARTCOINUSDT","name":"Fartcoin",       "delta":"FARTCOINUSD","lev":20,"options":False,"tv":"BYBIT:FARTCOINUSDT"},
+        {"symbol":"PENGUUSDT",  "name":"Pudgy Penguins",  "delta":"PENGUUSD",   "lev":20,"options":False,"tv":"BINANCE:PENGUUSDT"},
+        {"symbol":"TRUMPUSDT",  "name":"Official Trump",  "delta":"TRUMPUSD",   "lev":20,"options":False,"tv":"BINANCE:TRUMPUSDT"},
+        {"symbol":"SPXUSDT",    "name":"SPX6900",         "delta":"SPXUSD",     "lev":20,"options":False,"tv":"BYBIT:SPXUSDT"},
+        {"symbol":"TURBOUSDT",  "name":"Turbo",           "delta":"TURBOUSD",   "lev":20,"options":False,"tv":"BYBIT:TURBOUSDT"},
+        {"symbol":"BLURUSDT",   "name":"Blur",            "delta":"BLURUSD",    "lev":20,"options":False,"tv":"BINANCE:BLURUSDT"},
+        {"symbol":"LISTAUSDT",  "name":"Lista DAO",       "delta":"LISTAUSD",   "lev":20,"options":False,"tv":"BINANCE:LISTAUSDT"},
+        {"symbol":"XAIUSDT",    "name":"Xai Gaming",      "delta":"XAIUSD",     "lev":20,"options":False,"tv":"BINANCE:XAIUSDT"},
+        {"symbol":"USUALUSDT",  "name":"Usual",           "delta":"USUALUSD",   "lev":20,"options":False,"tv":"BINANCE:USUALUSDT"},
+        {"symbol":"CROSSUSDT",  "name":"Cross",           "delta":"CROSSUSD",   "lev":20,"options":False,"tv":"BYBIT:CROSSUSDT"},
+        {"symbol":"SIGNUSDT",   "name":"Sign",            "delta":"SIGNUSD",    "lev":20,"options":False,"tv":"BINANCE:SIGNUSDT"},
+        {"symbol":"ACEUSDT",    "name":"Fusionist",       "delta":"ACEUSD",     "lev":20,"options":False,"tv":"BINANCE:ACEUSDT"},
     ],
 
     # ---------------------------------------------------------------
@@ -139,15 +139,15 @@ COIN_UNIVERSE = {
     # Moderate volatility. Good for swing + catalyst trades.
     # ---------------------------------------------------------------
     "DeFi": [
-        {"symbol":"ENAUSDT",   "name":"Ethena",        "delta":"ENAUSD",   "lev":20,"opt":False,"tv":"BINANCE:ENAUSDT"},
-        {"symbol":"EIGENUSDT", "name":"EigenLayer",    "delta":"EIGENUSD", "lev":20,"opt":False,"tv":"BINANCE:EIGENUSDT"},
-        {"symbol":"CRVUSDT",   "name":"Curve",         "delta":"CRVUSD",   "lev":20,"opt":False,"tv":"BINANCE:CRVUSDT"},
-        {"symbol":"MKRUSDT",   "name":"Maker",         "delta":"MKRUSD",   "lev":20,"opt":False,"tv":"BINANCE:MKRUSDT"},
-        {"symbol":"GMXUSDT",   "name":"GMX",           "delta":"GMXUSD",   "lev":20,"opt":False,"tv":"BINANCE:GMXUSDT"},
-        {"symbol":"SUSHIUSDT", "name":"SushiSwap",     "delta":"SUSHIUSD", "lev":20,"opt":False,"tv":"BINANCE:SUSHIUSDT"},
-        {"symbol":"COMPUSDT",  "name":"Compound",      "delta":"COMPUSD",  "lev":20,"opt":False,"tv":"BINANCE:COMPUSDT"},
-        {"symbol":"APEUSDT",   "name":"ApeCoin",       "delta":"APEUSD",   "lev":20,"opt":False,"tv":"BINANCE:APEUSDT"},
-        {"symbol":"JUPUSDT",   "name":"Jupiter",       "delta":"JUPUSD",   "lev":20,"opt":False,"tv":"BINANCE:JUPUSDT"},
+        {"symbol":"ENAUSDT",   "name":"Ethena",        "delta":"ENAUSD",   "lev":20,"options":False,"tv":"BINANCE:ENAUSDT"},
+        {"symbol":"EIGENUSDT", "name":"EigenLayer",    "delta":"EIGENUSD", "lev":20,"options":False,"tv":"BINANCE:EIGENUSDT"},
+        {"symbol":"CRVUSDT",   "name":"Curve",         "delta":"CRVUSD",   "lev":20,"options":False,"tv":"BINANCE:CRVUSDT"},
+        {"symbol":"MKRUSDT",   "name":"Maker",         "delta":"MKRUSD",   "lev":20,"options":False,"tv":"BINANCE:MKRUSDT"},
+        {"symbol":"GMXUSDT",   "name":"GMX",           "delta":"GMXUSD",   "lev":20,"options":False,"tv":"BINANCE:GMXUSDT"},
+        {"symbol":"SUSHIUSDT", "name":"SushiSwap",     "delta":"SUSHIUSD", "lev":20,"options":False,"tv":"BINANCE:SUSHIUSDT"},
+        {"symbol":"COMPUSDT",  "name":"Compound",      "delta":"COMPUSD",  "lev":20,"options":False,"tv":"BINANCE:COMPUSDT"},
+        {"symbol":"APEUSDT",   "name":"ApeCoin",       "delta":"APEUSD",   "lev":20,"options":False,"tv":"BINANCE:APEUSDT"},
+        {"symbol":"JUPUSDT",   "name":"Jupiter",       "delta":"JUPUSD",   "lev":20,"options":False,"tv":"BINANCE:JUPUSDT"},
     ],
 
     # ---------------------------------------------------------------
@@ -155,25 +155,25 @@ COIN_UNIVERSE = {
     # 5-15% daily range. Catch breakouts on news catalysts.
     # ---------------------------------------------------------------
     "Narrative": [
-        {"symbol":"TAOUSDT",    "name":"Bittensor",          "delta":"TAOUSD",    "lev":20,"opt":False,"tv":"BYBIT:TAOUSDT"},
-        {"symbol":"RENDERUSDT", "name":"Render",             "delta":"RENDERUSD", "lev":20,"opt":False,"tv":"BINANCE:RENDERUSDT"},
-        {"symbol":"FETUSDT",    "name":"Fetch.ai",           "delta":"FETUSD",    "lev":20,"opt":False,"tv":"BINANCE:FETUSDT"},
-        {"symbol":"AGIXUSDT",   "name":"SingularityNET",     "delta":"AGIXUSD",   "lev":20,"opt":False,"tv":"BYBIT:AGIXUSDT"},
-        {"symbol":"TIAUSDT",    "name":"Celestia",           "delta":"TIAUSD",    "lev":20,"opt":False,"tv":"BINANCE:TIAUSDT"},
-        {"symbol":"PYTHUSDT",   "name":"Pyth Network",       "delta":"PYTHUSD",   "lev":20,"opt":False,"tv":"BINANCE:PYTHUSDT"},
-        {"symbol":"STRKUSDT",   "name":"Starknet",           "delta":"STRKUSD",   "lev":20,"opt":False,"tv":"BINANCE:STRKUSDT"},
-        {"symbol":"ALTUSDT",    "name":"AltLayer",           "delta":"ALTUSD",    "lev":20,"opt":False,"tv":"BINANCE:ALTUSDT"},
-        {"symbol":"DYMUSDT",    "name":"Dymension",          "delta":"DYMUSD",    "lev":20,"opt":False,"tv":"BINANCE:DYMUSDT"},
-        {"symbol":"ZROUSDT",    "name":"LayerZero",          "delta":"ZROUSD",    "lev":20,"opt":False,"tv":"BINANCE:ZROUSDT"},
-        {"symbol":"BEAMUSDT",   "name":"Beam Gaming",        "delta":"BEAMUSD",   "lev":20,"opt":False,"tv":"BINANCE:BEAMUSDT"},
-        {"symbol":"MAGICUSDT",  "name":"Magic",              "delta":"MAGICUSD",  "lev":20,"opt":False,"tv":"BINANCE:MAGICUSDT"},
-        {"symbol":"ILVUSDT",    "name":"Illuvium",           "delta":"ILVCUSD",   "lev":20,"opt":False,"tv":"BINANCE:ILVUSDT"},
-        {"symbol":"PIXELUSDT",  "name":"Pixels Gaming",      "delta":"PIXELUSD",  "lev":20,"opt":False,"tv":"BYBIT:PIXELUSDT"},
-        {"symbol":"IOUSDT",     "name":"io.net",             "delta":"IOUSD",     "lev":20,"opt":False,"tv":"BINANCE:IOUSDT"},
-        {"symbol":"ZETAUSDT",   "name":"ZetaChain",          "delta":"ZETAUSD",   "lev":20,"opt":False,"tv":"BINANCE:ZETAUSDT"},
-        {"symbol":"ORDIUSDT",   "name":"ORDI (BRC-20)",      "delta":"ORDIUSD",   "lev":20,"opt":False,"tv":"BINANCE:ORDIUSDT"},
-        {"symbol":"RUNEUSDT",   "name":"THORChain",          "delta":"RUNEUSD",   "lev":20,"opt":False,"tv":"BINANCE:RUNEUSDT"},
-        {"symbol":"1000SATSUSDT","name":"1000SATS (BRC-20)", "delta":"1000SATSUSD","lev":20,"opt":False,"tv":"BINANCE:1000SATSUSDT"},
+        {"symbol":"TAOUSDT",    "name":"Bittensor",          "delta":"TAOUSD",    "lev":20,"options":False,"tv":"BYBIT:TAOUSDT"},
+        {"symbol":"RENDERUSDT", "name":"Render",             "delta":"RENDERUSD", "lev":20,"options":False,"tv":"BINANCE:RENDERUSDT"},
+        {"symbol":"FETUSDT",    "name":"Fetch.ai",           "delta":"FETUSD",    "lev":20,"options":False,"tv":"BINANCE:FETUSDT"},
+        {"symbol":"AGIXUSDT",   "name":"SingularityNET",     "delta":"AGIXUSD",   "lev":20,"options":False,"tv":"BYBIT:AGIXUSDT"},
+        {"symbol":"TIAUSDT",    "name":"Celestia",           "delta":"TIAUSD",    "lev":20,"options":False,"tv":"BINANCE:TIAUSDT"},
+        {"symbol":"PYTHUSDT",   "name":"Pyth Network",       "delta":"PYTHUSD",   "lev":20,"options":False,"tv":"BINANCE:PYTHUSDT"},
+        {"symbol":"STRKUSDT",   "name":"Starknet",           "delta":"STRKUSD",   "lev":20,"options":False,"tv":"BINANCE:STRKUSDT"},
+        {"symbol":"ALTUSDT",    "name":"AltLayer",           "delta":"ALTUSD",    "lev":20,"options":False,"tv":"BINANCE:ALTUSDT"},
+        {"symbol":"DYMUSDT",    "name":"Dymension",          "delta":"DYMUSD",    "lev":20,"options":False,"tv":"BINANCE:DYMUSDT"},
+        {"symbol":"ZROUSDT",    "name":"LayerZero",          "delta":"ZROUSD",    "lev":20,"options":False,"tv":"BINANCE:ZROUSDT"},
+        {"symbol":"BEAMUSDT",   "name":"Beam Gaming",        "delta":"BEAMUSD",   "lev":20,"options":False,"tv":"BINANCE:BEAMUSDT"},
+        {"symbol":"MAGICUSDT",  "name":"Magic",              "delta":"MAGICUSD",  "lev":20,"options":False,"tv":"BINANCE:MAGICUSDT"},
+        {"symbol":"ILVUSDT",    "name":"Illuvium",           "delta":"ILVCUSD",   "lev":20,"options":False,"tv":"BINANCE:ILVUSDT"},
+        {"symbol":"PIXELUSDT",  "name":"Pixels Gaming",      "delta":"PIXELUSD",  "lev":20,"options":False,"tv":"BYBIT:PIXELUSDT"},
+        {"symbol":"IOUSDT",     "name":"io.net",             "delta":"IOUSD",     "lev":20,"options":False,"tv":"BINANCE:IOUSDT"},
+        {"symbol":"ZETAUSDT",   "name":"ZetaChain",          "delta":"ZETAUSD",   "lev":20,"options":False,"tv":"BINANCE:ZETAUSDT"},
+        {"symbol":"ORDIUSDT",   "name":"ORDI (BRC-20)",      "delta":"ORDIUSD",   "lev":20,"options":False,"tv":"BINANCE:ORDIUSDT"},
+        {"symbol":"RUNEUSDT",   "name":"THORChain",          "delta":"RUNEUSD",   "lev":20,"options":False,"tv":"BINANCE:RUNEUSDT"},
+        {"symbol":"1000SATSUSDT","name":"1000SATS (BRC-20)", "delta":"1000SATSUSD","lev":20,"options":False,"tv":"BINANCE:1000SATSUSDT"},
     ],
 
     # ---------------------------------------------------------------
@@ -184,18 +184,18 @@ COIN_UNIVERSE = {
     # ---------------------------------------------------------------
     "xStock": [
         # Core US tech stocks — already in previous list
-        {"symbol":"TSLAXUSDT",  "name":"Tesla",              "delta":"TSLAXUSD",  "lev":10,"opt":False,"tv":"NASDAQ:TSLA"},
-        {"symbol":"NVDAXUSDT",  "name":"Nvidia",             "delta":"NVDAXUSD",  "lev":10,"opt":False,"tv":"NASDAQ:NVDA"},
-        {"symbol":"AAPLXUSDT",  "name":"Apple",              "delta":"AAPLXUSD",  "lev":10,"opt":False,"tv":"NASDAQ:AAPL"},
-        {"symbol":"METAXUSDT",  "name":"Meta (Facebook)",    "delta":"METAXUSD",  "lev":10,"opt":False,"tv":"NASDAQ:META"},
-        {"symbol":"GOOGLXUSDT", "name":"Alphabet (Google)",  "delta":"GOOGLXUSD", "lev":10,"opt":False,"tv":"NASDAQ:GOOGL"},
-        {"symbol":"AMZNXUSDT",  "name":"Amazon",             "delta":"AMZNXUSD",  "lev":10,"opt":False,"tv":"NASDAQ:AMZN"},
-        {"symbol":"MSFTXUSDT",  "name":"Microsoft",          "delta":"MSFTXUSD",  "lev":10,"opt":False,"tv":"NASDAQ:MSFT"},
-        {"symbol":"QQQXUSDT",   "name":"Nasdaq ETF (QQQ)",   "delta":"QQQXUSD",   "lev":10,"opt":False,"tv":"NASDAQ:QQQ"},
-        {"symbol":"SPYXUSDT",   "name":"S&P500 ETF (SPY)",   "delta":"SPYXUSD",   "lev":10,"opt":False,"tv":"AMEX:SPY"},
+        {"symbol":"TSLAXUSDT",  "name":"Tesla",              "delta":"TSLAXUSD",  "lev":10,"options":False,"tv":"NASDAQ:TSLA"},
+        {"symbol":"NVDAXUSDT",  "name":"Nvidia",             "delta":"NVDAXUSD",  "lev":10,"options":False,"tv":"NASDAQ:NVDA"},
+        {"symbol":"AAPLXUSDT",  "name":"Apple",              "delta":"AAPLXUSD",  "lev":10,"options":False,"tv":"NASDAQ:AAPL"},
+        {"symbol":"METAXUSDT",  "name":"Meta (Facebook)",    "delta":"METAXUSD",  "lev":10,"options":False,"tv":"NASDAQ:META"},
+        {"symbol":"GOOGLXUSDT", "name":"Alphabet (Google)",  "delta":"GOOGLXUSD", "lev":10,"options":False,"tv":"NASDAQ:GOOGL"},
+        {"symbol":"AMZNXUSDT",  "name":"Amazon",             "delta":"AMZNXUSD",  "lev":10,"options":False,"tv":"NASDAQ:AMZN"},
+        {"symbol":"MSFTXUSDT",  "name":"Microsoft",          "delta":"MSFTXUSD",  "lev":10,"options":False,"tv":"NASDAQ:MSFT"},
+        {"symbol":"QQQXUSDT",   "name":"Nasdaq ETF (QQQ)",   "delta":"QQQXUSD",   "lev":10,"options":False,"tv":"NASDAQ:QQQ"},
+        {"symbol":"SPYXUSDT",   "name":"S&P500 ETF (SPY)",   "delta":"SPYXUSD",   "lev":10,"options":False,"tv":"AMEX:SPY"},
         # NEW — confirmed live on Delta India
-        {"symbol":"SPCXXUSDT",  "name":"SpaceX (private co)","delta":"SPCXXUSD",  "lev":25,"opt":False,"tv":"BINANCE:SPCXUSDT"},
-        {"symbol":"MUBXUSDT",   "name":"Micron Technology",  "delta":"MUBUSD",    "lev":25,"opt":False,"tv":"NASDAQ:MU"},
+        {"symbol":"SPCXXUSDT",  "name":"SpaceX (private co)","delta":"SPCXXUSD",  "lev":25,"options":False,"tv":"BINANCE:SPCXUSDT"},
+        {"symbol":"MUBXUSDT",   "name":"Micron Technology",  "delta":"MUBUSD",    "lev":25,"options":False,"tv":"NASDAQ:MU"},
         # SanDisk delisted 2016 — Western Digital is the parent, search WDCBUSD in Delta
         # {"symbol":"WDCBUSDT", "name":"Western Digital",   "delta":"WDCBUSD",   "lev":25, "tv":"NASDAQ:WDC"},
     ],
@@ -209,10 +209,10 @@ COIN_UNIVERSE = {
     # XAG = silver ISO code (Latin 'argentum')
     # ---------------------------------------------------------------
     "Commodities": [
-        {"symbol":"PAXGUSDT",  "name":"Gold — PAX Gold",    "delta":"PAXGUSD",  "lev":20,"opt":False,"tv":"OANDA:XAUUSD"},
-        {"symbol":"XAUTUSDT",  "name":"Gold — Tether Gold", "delta":"XAUTUSD",  "lev":20,"opt":False,"tv":"OANDA:XAUUSD"},
+        {"symbol":"PAXGUSDT",  "name":"Gold — PAX Gold",    "delta":"PAXGUSD",  "lev":20,"options":False,"tv":"OANDA:XAUUSD"},
+        {"symbol":"XAUTUSDT",  "name":"Gold — Tether Gold", "delta":"XAUTUSD",  "lev":20,"options":False,"tv":"OANDA:XAUUSD"},
         # NEW — Silver xStock confirmed live on Delta
-        {"symbol":"SLVONUSDT", "name":"Silver xStock",      "delta":"SLVONUSD", "lev":25,"opt":False,"tv":"OANDA:XAGUSD"},
+        {"symbol":"SLVONUSDT", "name":"Silver xStock",      "delta":"SLVONUSD", "lev":25,"options":False,"tv":"OANDA:XAGUSD"},
     ],
 
     # ---------------------------------------------------------------
@@ -220,24 +220,24 @@ COIN_UNIVERSE = {
     # Good for scalping sessions when crypto is strongly trending
     # ---------------------------------------------------------------
     "Volatile": [
-        {"symbol":"GALAUSDT",   "name":"Gala",               "delta":"GALAUSD",  "lev":20,"opt":False,"tv":"BINANCE:GALAUSDT"},
-        {"symbol":"SANDUSDT",   "name":"The Sandbox",        "delta":"SANDUSD",  "lev":50,"opt":False,"tv":"BINANCE:SANDUSDT"},
-        {"symbol":"MANAUSDT",   "name":"Decentraland",       "delta":"MANAUSD",  "lev":50,"opt":False,"tv":"BINANCE:MANAUSDT"},
-        {"symbol":"SNXUSDT",    "name":"Synthetix",          "delta":"SNXUSD",   "lev":20,"opt":False,"tv":"BINANCE:SNXUSDT"},
-        {"symbol":"ANKRUSDT",   "name":"Ankr",               "delta":"ANKRUSD",  "lev":20,"opt":False,"tv":"BINANCE:ANKRUSDT"},
-        {"symbol":"ENSUSDT",    "name":"ENS",                "delta":"ENSUSD",   "lev":20,"opt":False,"tv":"BINANCE:ENSUSDT"},
-        {"symbol":"YGGUSDT",    "name":"Yield Guild Games",  "delta":"YGGUSD",   "lev":20,"opt":False,"tv":"BINANCE:YGGUSDT"},
-        {"symbol":"ALGOUSDT",   "name":"Algorand",           "delta":"ALGOUSD",  "lev":20,"opt":False,"tv":"BINANCE:ALGOUSDT"},
-        {"symbol":"ICPUSDT",    "name":"Internet Computer",  "delta":"ICPUSD",   "lev":20,"opt":False,"tv":"BINANCE:ICPUSDT"},
-        {"symbol":"FILUSDT",    "name":"Filecoin",           "delta":"FILUSD",   "lev":20,"opt":False,"tv":"BINANCE:FILUSDT"},
-        {"symbol":"FLOWUSDT",   "name":"Flow",               "delta":"FLOWUSD",  "lev":20,"opt":False,"tv":"BINANCE:FLOWUSDT"},
-        {"symbol":"EGLDUSDT",   "name":"MultiversX",         "delta":"EGLDUSD",  "lev":20,"opt":False,"tv":"BINANCE:EGLDUSDT"},
-        {"symbol":"XTZUSDT",    "name":"Tezos",              "delta":"XTZUSD",   "lev":20,"opt":False,"tv":"BINANCE:XTZUSDT"},
-        {"symbol":"VETUSDT",    "name":"VeChain",            "delta":"VETUSD",   "lev":20,"opt":False,"tv":"BINANCE:VETUSDT"},
-        {"symbol":"XMRUSDT",    "name":"Monero",             "delta":"XMRUSD",   "lev":20,"opt":False,"tv":"KRAKEN:XMRUSD"},
-        {"symbol":"KAVAUSDT",   "name":"Kava",               "delta":"KAVAUSD",  "lev":20,"opt":False,"tv":"BINANCE:KAVAUSDT"},
-        {"symbol":"ZECUSDT",    "name":"Zcash",              "delta":"ZECUSD",   "lev":20,"opt":False,"tv":"BINANCE:ZECUSDT"},
-        {"symbol":"CELOUSDT",   "name":"Celo",               "delta":"CELOUSD",  "lev":20,"opt":False,"tv":"BINANCE:CELOSDT"},
+        {"symbol":"GALAUSDT",   "name":"Gala",               "delta":"GALAUSD",  "lev":20,"options":False,"tv":"BINANCE:GALAUSDT"},
+        {"symbol":"SANDUSDT",   "name":"The Sandbox",        "delta":"SANDUSD",  "lev":50,"options":False,"tv":"BINANCE:SANDUSDT"},
+        {"symbol":"MANAUSDT",   "name":"Decentraland",       "delta":"MANAUSD",  "lev":50,"options":False,"tv":"BINANCE:MANAUSDT"},
+        {"symbol":"SNXUSDT",    "name":"Synthetix",          "delta":"SNXUSD",   "lev":20,"options":False,"tv":"BINANCE:SNXUSDT"},
+        {"symbol":"ANKRUSDT",   "name":"Ankr",               "delta":"ANKRUSD",  "lev":20,"options":False,"tv":"BINANCE:ANKRUSDT"},
+        {"symbol":"ENSUSDT",    "name":"ENS",                "delta":"ENSUSD",   "lev":20,"options":False,"tv":"BINANCE:ENSUSDT"},
+        {"symbol":"YGGUSDT",    "name":"Yield Guild Games",  "delta":"YGGUSD",   "lev":20,"options":False,"tv":"BINANCE:YGGUSDT"},
+        {"symbol":"ALGOUSDT",   "name":"Algorand",           "delta":"ALGOUSD",  "lev":20,"options":False,"tv":"BINANCE:ALGOUSDT"},
+        {"symbol":"ICPUSDT",    "name":"Internet Computer",  "delta":"ICPUSD",   "lev":20,"options":False,"tv":"BINANCE:ICPUSDT"},
+        {"symbol":"FILUSDT",    "name":"Filecoin",           "delta":"FILUSD",   "lev":20,"options":False,"tv":"BINANCE:FILUSDT"},
+        {"symbol":"FLOWUSDT",   "name":"Flow",               "delta":"FLOWUSD",  "lev":20,"options":False,"tv":"BINANCE:FLOWUSDT"},
+        {"symbol":"EGLDUSDT",   "name":"MultiversX",         "delta":"EGLDUSD",  "lev":20,"options":False,"tv":"BINANCE:EGLDUSDT"},
+        {"symbol":"XTZUSDT",    "name":"Tezos",              "delta":"XTZUSD",   "lev":20,"options":False,"tv":"BINANCE:XTZUSDT"},
+        {"symbol":"VETUSDT",    "name":"VeChain",            "delta":"VETUSD",   "lev":20,"options":False,"tv":"BINANCE:VETUSDT"},
+        {"symbol":"XMRUSDT",    "name":"Monero",             "delta":"XMRUSD",   "lev":20,"options":False,"tv":"KRAKEN:XMRUSD"},
+        {"symbol":"KAVAUSDT",   "name":"Kava",               "delta":"KAVAUSD",  "lev":20,"options":False,"tv":"BINANCE:KAVAUSDT"},
+        {"symbol":"ZECUSDT",    "name":"Zcash",              "delta":"ZECUSD",   "lev":20,"options":False,"tv":"BINANCE:ZECUSDT"},
+        {"symbol":"CELOUSDT",   "name":"Celo",               "delta":"CELOUSD",  "lev":20,"options":False,"tv":"BINANCE:CELOSDT"},
     ],
 }
 
