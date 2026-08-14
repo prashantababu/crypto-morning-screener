@@ -151,11 +151,6 @@ def scan_universe():
     symbols = all_symbols()
     needed_intervals = {MODE_CONFIG[m]["interval"]: MODE_CONFIG[m]["limit"] for m in modes}
 
-    # SMC engine always needs 1h candles (65 bars = ~2.7 days of history).
-    # Guarantee they are fetched even when no selected mode uses 1h interval
-    # (e.g. intraday uses 15m, swing uses 4h).
-    needed_intervals["1h"] = max(needed_intervals.get("1h", 0), 65)
-
     # Fetch each required interval for the whole universe in parallel (one
     # waterfall pass per interval), then run the strategy engine per symbol.
     interval_data = {}
@@ -168,27 +163,7 @@ def scan_universe():
         for interval in needed_intervals:
             payload = interval_data[interval].get(symbol, {})
             candles_by_interval[interval] = payload.get("candles")
-
-        # Traditional indicator scan (RSI / EMA / MACD / BB / ATR / VWAP)
-        scan_result = run_scan(symbol, candles_by_interval, modes=modes)
-
-        # SMC signal engine (Order Blocks / FVG / BOS-CHoCH / Liquidity /
-        # Supply-Demand / Fibonacci OTE / Volume Profile / Premium-Discount).
-        # Runs on 1h candles independently of the mode selected above.
-        try:
-            candles_1h = candles_by_interval.get("1h") or []
-            scan_result["smc"] = run_smc_scan(symbol, candles_1h)
-        except Exception as e:
-            logger.warning(f"SMC scan failed for {symbol}: {e}")
-            scan_result["smc"] = {
-                "direction": "neutral",
-                "confidence": 0,
-                "confidence_label": "SMC error — check logs",
-                "reasons": [str(e)],
-                "levels": {},
-            }
-
-        results[symbol] = scan_result
+        results[symbol] = run_scan(symbol, candles_by_interval, modes=modes)
 
     return jsonify({"modes": modes, "results": results, "count": len(symbols)})
 
@@ -196,7 +171,9 @@ def scan_universe():
 @app.route("/api/heatmap")
 def heatmap():
     symbols = all_symbols()
-    raw = fetch_universe_klines(symbols, interval="1h", limit=30)
+    # Limit to 20 candles for heatmap — only needs 24h change + quick signal,
+    # not deep history. Keeps the fetch fast on Render free tier.
+    raw = fetch_universe_klines(symbols, interval="1h", limit=20)
     symbol_candles = {s: payload.get("candles") for s, payload in raw.items() if payload.get("candles")}
 
     # Overlay a quick intraday-style signal per coin using the same 1h
@@ -204,8 +181,11 @@ def heatmap():
     # round-trip just to color/badge each cell with direction+confidence).
     scan_results = {}
     for symbol, candles in symbol_candles.items():
-        if candles and len(candles) >= 25:
-            scan_results[symbol] = quick_signal(candles)
+        if candles and len(candles) >= 15:
+            try:
+                scan_results[symbol] = quick_signal(candles)
+            except Exception as e:
+                logger.warning(f"quick_signal failed for {symbol}: {e}")
 
     data = build_heatmap(symbol_candles, scan_results_by_symbol=scan_results)
     return jsonify(data)
