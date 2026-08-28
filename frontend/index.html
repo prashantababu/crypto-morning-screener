@@ -134,7 +134,7 @@ tr:hover td{background:var(--surface)}
 
 <!-- ── Config bar ── -->
 <div class="config-bar">
-  <input type="text" id="api-base" value="http://localhost:5000" placeholder="Backend URL">
+  <input type="text" id="api-base" value="https://crypto-morning-screener-api.onrender.com" placeholder="https://your-app.onrender.com">
   <button id="btn-connect">Connect</button>
   <button id="btn-refresh">↻ Refresh</button>
   <label style="font-size:11px;color:var(--text-secondary)">Auto
@@ -198,7 +198,14 @@ tr:hover td{background:var(--surface)}
 
 <script>
 // ── State ──────────────────────────────────────────────────────────────────
-let API = document.getElementById('api-base').value;
+let API = document.getElementById('api-base').value.replace(/\/$/,'');
+// Auto-detect: if opened from GitHub Pages or any https origin,
+// and the stored URL is still localhost, warn the user clearly
+if (location.protocol === 'https:' && API.startsWith('http:')) {
+  document.getElementById('api-base').style.border = '1px solid var(--red)';
+  document.getElementById('api-base').title =
+    'Mixed content blocked! Change http:// to https:// or enter your Render URL';
+}
 let autoTimer = null;
 let inFlight  = false;
 let coinCount = 0;
