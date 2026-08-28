@@ -4,7 +4,8 @@ Crypto Morning Screener - Flask API.
 Endpoints:
   GET /api/health
   GET /api/scan?symbol=BTCUSDT&modes=intraday,swing
-  GET /api/scan/universe?modes=intraday          -> scans full 45-coin watchlist
+  GET /api/scan/universe?modes=intraday          -> scans full 118-coin watchlist
+  GET /api/scan/smc                              -> SMC scan top-20 by confidence (15m)
   GET /api/heatmap                                -> heatmap grid data
   GET /api/coins                                  -> coin universe metadata
 
@@ -167,6 +168,52 @@ def scan_universe():
 
     return jsonify({"modes": modes, "results": results, "count": len(symbols)})
 
+
+
+@app.route("/api/scan/smc")
+def scan_smc():
+    """
+    SMC (Smart Money Concepts) scan across all 118 coins using 15m candles.
+    Returns top 20 by confidence score, sorted highest first.
+    Each result includes: direction, confidence, which concepts fired,
+    entry / stop-loss / target1 / target2, session kill zone status.
+
+    Query params:
+      top_n   : number of results to return (default 20, max 50)
+      min_conf: minimum confidence to include (default 0, show all in top_n)
+    """
+    top_n    = min(int(request.args.get("top_n", 20)), 50)
+    min_conf = int(request.args.get("min_conf", 0))
+
+    symbols = all_symbols()
+
+    # Fetch 15m candles for entire universe in one waterfall pass
+    # 100 candles = ~25 hours of 15m bars — enough for SMC structure detection
+    raw_15m = fetch_universe_klines(symbols, interval="15m", limit=100)
+
+    results = []
+    for symbol in symbols:
+        payload = raw_15m.get(symbol, {})
+        candles = payload.get("candles") or []
+        if len(candles) < 30:
+            continue
+        try:
+            sig = run_smc_scan(symbol, candles)
+            if sig["confidence"] >= min_conf:
+                results.append(sig)
+        except Exception as e:
+            logger.warning(f"SMC scan error {symbol}: {e}")
+
+    # Sort by confidence descending, take top_n
+    results.sort(key=lambda x: x["confidence"], reverse=True)
+    top = results[:top_n]
+
+    return jsonify({
+        "count_scanned": len(symbols),
+        "count_returned": len(top),
+        "top_n": top_n,
+        "results": top,
+    })
 
 @app.route("/api/heatmap")
 def heatmap():
