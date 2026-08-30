@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Crypto SMC Screener</title>
+
+<!-- ── Candlestick favicon (SVG inline data URI) ─────────────────────── -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230d1117'/><rect x='7' y='6' width='3' height='20' rx='1' fill='%233fb950'/><rect x='5' y='10' width='7' height='9' rx='1' fill='%233fb950'/><rect x='15' y='4' width='3' height='24' rx='1' fill='%23f85149'/><rect x='13' y='9' width='7' height='11' rx='1' fill='%23f85149'/><rect x='23' y='8' width='3' height='16' rx='1' fill='%233fb950'/><rect x='21' y='12' width='7' height='7' rx='1' fill='%233fb950'/></svg>">
+
+<style>
+:root{
+  --bg:#0d1117;--surface:#161b22;--surface-2:#1c2128;--border:#30363d;
+  --text-primary:#e6edf3;--text-secondary:#8b949e;--text-muted:#6e7681;
+  --green:#3fb950;--green-bg:rgba(63,185,80,.12);--green-dim:rgba(63,185,80,.07);
+  --red:#f85149;--red-bg:rgba(248,81,73,.12);
+  --amber:#d29922;--amber-bg:rgba(210,153,34,.12);
+  --blue:#58a6ff;--blue-bg:rgba(88,166,255,.1);
+  --purple:#bc8cff;--purple-bg:rgba(188,140,255,.1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text-primary);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:13px;min-height:100vh}
+
+/* ── Layout ── */
+.header{display:flex;justify-content:space-between;align-items:center;padding:.75rem 1rem;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px}
+.brand{display:flex;align-items:center;gap:8px}
+.brand-icon{font-size:20px}
+.brand-name{font-size:16px;font-weight:600}
+.brand-count{font-size:11px;color:var(--text-muted);background:var(--surface-2);border:0.5px solid var(--border);padding:1px 7px;border-radius:10px}
+.status-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--text-muted);flex-shrink:0}
+.dot.ok{background:var(--green)}.dot.err{background:var(--red)}
+.status-text{font-size:12px;color:var(--text-secondary)}
+
+/* ── Kill Zone badge ── */
+.kz-badge{font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;animation:pulse 2s infinite}
+.kz-london{background:var(--blue-bg);color:var(--blue)}
+.kz-ny{background:var(--green-bg);color:var(--green)}
+.kz-asia{background:var(--purple-bg);color:var(--purple)}
+.kz-off{background:var(--surface-2);color:var(--text-muted)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+
+/* ── Config bar ── */
+.config-bar{display:flex;gap:8px;align-items:center;padding:.5rem 1rem;border-bottom:1px solid var(--border);flex-wrap:wrap;background:var(--surface)}
+.config-bar input{background:var(--bg);border:1px solid var(--border);color:var(--text-primary);padding:4px 8px;border-radius:6px;font-size:12px;width:280px}
+.config-bar button,.config-bar select{background:var(--surface-2);border:1px solid var(--border);color:var(--text-primary);padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer}
+.config-bar button:hover{border-color:var(--blue);color:var(--blue)}
+.ts{font-size:10px;color:var(--text-muted)}
+
+/* ── Tabs ── */
+.tabs{display:flex;gap:2px;padding:.5rem 1rem 0;border-bottom:1px solid var(--border);overflow-x:auto;background:var(--surface)}
+.tab{padding:7px 14px;font-size:12px;font-weight:500;color:var(--text-secondary);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;border-radius:6px 6px 0 0}
+.tab:hover{color:var(--text-primary);background:var(--surface-2)}
+.tab.active{color:var(--text-primary);border-bottom-color:var(--blue);background:var(--bg)}
+.tab.smc-tab{color:var(--amber)}
+.tab.smc-tab.active{color:var(--amber);border-bottom-color:var(--amber)}
+.tab-badge{font-size:9px;padding:1px 5px;border-radius:8px;margin-left:5px;background:var(--amber-bg);color:var(--amber);font-weight:700}
+
+/* ── Panels ── */
+.panel{display:none;padding:.75rem 1rem}.panel.active{display:block}
+.mode-desc{font-size:11px;color:var(--text-secondary);margin-bottom:.75rem;padding:6px 10px;background:var(--surface);border-radius:6px;border:0.5px solid var(--border)}
+
+/* ── Tables ── */
+.table-wrap{overflow-x:auto;border-radius:8px;border:0.5px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:900px}
+th{text-align:left;padding:7px 10px;color:var(--text-secondary);font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.03em;border-bottom:1px solid var(--border);background:var(--surface);white-space:nowrap;position:sticky;top:0}
+td{padding:6px 10px;border-bottom:0.5px solid var(--border);white-space:nowrap;vertical-align:middle}
+tr:hover td{background:var(--surface)}
+.num{font-family:"SF Mono",Consolas,monospace;font-size:11px}
+
+/* ── SMC specific ── */
+.dir-pill{font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px}
+.dir-long{background:var(--green-bg);color:var(--green)}
+.dir-short{background:var(--red-bg);color:var(--red)}
+.dir-neutral{background:var(--surface-2);color:var(--text-muted)}
+.conf-bar-wrap{display:flex;align-items:center;gap:5px}
+.conf-bar{width:44px;height:5px;background:var(--surface-2);border-radius:3px;overflow:hidden}
+.conf-fill{height:100%;border-radius:3px}
+.conf-pct{font-size:11px;font-family:monospace}
+
+/* SMC concept checklist chips */
+.chips{display:flex;flex-wrap:wrap;gap:3px;max-width:260px}
+.chip{font-size:9px;padding:1px 5px;border-radius:3px;font-weight:600;white-space:nowrap}
+.chip-on{background:var(--green-bg);color:var(--green)}
+.chip-off{background:var(--surface-2);color:var(--text-muted);opacity:.5}
+.chip-warn{background:var(--amber-bg);color:var(--amber)}
+
+/* Session chip */
+.sess{font-size:10px;padding:1px 6px;border-radius:3px;font-weight:500}
+.sess-london{background:var(--blue-bg);color:var(--blue)}
+.sess-ny{background:var(--green-bg);color:var(--green)}
+.sess-asia{background:var(--purple-bg);color:var(--purple)}
+.sess-off{background:var(--surface-2);color:var(--text-muted)}
+
+.reasons-cell{font-size:10px;color:var(--text-secondary);max-width:220px;white-space:normal;line-height:1.5}
+.rr-good{color:var(--green);font-weight:600}
+.rr-ok{color:var(--amber);font-weight:600}
+.rr-bad{color:var(--red)}
+
+/* Row highlights */
+.row-long td{background:var(--green-dim)!important}
+.row-short td{background:rgba(248,81,73,.04)!important}
+
+/* ── Heatmap ── */
+.heatmap-grid{display:flex;flex-direction:column;gap:14px}
+.cat-label{font-size:10px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.heatmap-cells{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:5px}
+.cell{border-radius:6px;padding:7px 9px;cursor:pointer;border:0.5px solid var(--border);transition:.15s}
+.cell:hover{filter:brightness(1.15)}
+.cell-sym{font-size:11px;font-weight:600}
+.cell-chg{font-size:13px;font-weight:700;margin-top:2px}
+.cell-sig{font-size:9px;margin-top:3px;font-weight:600}
+
+/* ── Misc ── */
+.loading,.empty{text-align:center;padding:2rem;color:var(--text-secondary)}
+.err{text-align:center;padding:1rem;color:var(--red);background:var(--red-bg);border-radius:8px;font-size:12px}
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<div class="header">
+  <div class="brand">
+    <span class="brand-icon">📊</span>
+    <span class="brand-name">Crypto SMC Screener</span>
+    <span class="brand-count" id="coin-count">— coins</span>
+  </div>
+  <div class="status-row">
+    <span class="dot" id="dot"></span>
+    <span class="status-text" id="status-text">connecting...</span>
+    <span class="kz-badge kz-off" id="kz-badge">⏸ Off-session</span>
+  </div>
+</div>
+
+<!-- ── Config bar ── -->
+<div class="config-bar">
+  <input type="text" id="api-base" value="https://crypto-morning-screener-api.onrender.com" placeholder="https://your-app.onrender.com">
+  <button id="btn-connect">Connect</button>
+  <button id="btn-refresh">↻ Refresh</button>
+  <label style="font-size:11px;color:var(--text-secondary)">Auto
+    <select id="auto-sel">
+      <option value="0">Off</option>
+      <option value="60000">1 min</option>
+      <option value="180000" selected>3 min</option>
+      <option value="300000">5 min</option>
+    </select>
+  </label>
+  <span class="ts" id="ts"></span>
+</div>
+
+<!-- ── Tabs ── -->
+<div class="tabs">
+  <div class="tab smc-tab active" data-panel="smc">⚡ SMC Scan <span class="tab-badge">NEW</span></div>
+  <div class="tab" data-panel="intraday">Intraday</div>
+  <div class="tab" data-panel="btst">BTST</div>
+  <div class="tab" data-panel="swing">Swing</div>
+  <div class="tab" data-panel="range">Range</div>
+  <div class="tab" data-panel="investment">Investment</div>
+  <div class="tab" data-panel="heatmap">Heatmap</div>
+</div>
+
+<!-- ── SMC Scan panel (default) ── -->
+<div class="panel active" id="panel-smc">
+  <div class="mode-desc">
+    <strong>Smart Money Concepts scan</strong> — 15m candles · Order Blocks · Fair Value Gaps · BOS/CHoCH ·
+    Liquidity Sweeps · Supply &amp; Demand · Fibonacci OTE · Volume Profile · Premium/Discount ·
+    Session Kill Zones. <strong>Top 20 by confidence, sorted highest first.</strong>
+    Green row = LONG setup · Red row = SHORT setup.
+  </div>
+  <div id="panel-smc-content" class="loading">Connect to load SMC signals...</div>
+</div>
+
+<!-- ── Traditional scan panels ── -->
+<div class="panel" id="panel-intraday">
+  <div class="mode-desc">Intraday — 15m candles · EMA 9/21 · RSI(14) · VWAP · same-day exit</div>
+  <div id="scan-intraday" class="loading">Connect...</div>
+</div>
+<div class="panel" id="panel-btst">
+  <div class="mode-desc">BTST — 1H candles · EMA + MACD + OBV · buy today sell tomorrow</div>
+  <div id="scan-btst" class="loading">Connect...</div>
+</div>
+<div class="panel" id="panel-swing">
+  <div class="mode-desc">Swing — 4H candles · EMA 21/50 + MACD + BB · 2–10 day hold</div>
+  <div id="scan-swing" class="loading">Connect...</div>
+</div>
+<div class="panel" id="panel-range">
+  <div class="mode-desc">Range — 1H candles · Bollinger Band mean-reversion</div>
+  <div id="scan-range" class="loading">Connect...</div>
+</div>
+<div class="panel" id="panel-investment">
+  <div class="mode-desc">Investment — 1D candles · long-only trend following</div>
+  <div id="scan-investment" class="loading">Connect...</div>
+</div>
+<div class="panel" id="panel-heatmap">
+  <div class="mode-desc">24h % change heatmap across the full coin universe</div>
+  <div id="heatmap-content" class="loading">Connect...</div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let API = document.getElementById('api-base').value.replace(/\/$/,'');
+// Auto-detect: if opened from GitHub Pages or any https origin,
+// and the stored URL is still localhost, warn the user clearly
+if (location.protocol === 'https:' && API.startsWith('http:')) {
+  document.getElementById('api-base').style.border = '1px solid var(--red)';
+  document.getElementById('api-base').title =
+    'Mixed content blocked! Change http:// to https:// or enter your Render URL';
+}
+let autoTimer = null;
+let inFlight  = false;
+let coinCount = 0;
+
+// ── Price formatter ────────────────────────────────────────────────────────
+function fp(v) {
+  if (v == null || v === '—') return '—';
+  const n = Number(v);
+  if (!isFinite(n) || n === 0) return String(v);
+  if (n >= 1000)  return '$' + n.toLocaleString('en-IN', {maximumFractionDigits:0});
+  if (n >= 1)     return '$' + n.toFixed(2);
+  if (n >= 0.0001)return '$' + n.toFixed(6);
+  const e = Math.floor(Math.log10(Math.abs(n)));
+  return '$' + n.toFixed(Math.max(0, -e+3));
+}
+function fPct(v) { return v == null ? '—' : (v>=0?'+':'')+Number(v).toFixed(2)+'%'; }
+function pctCol(p) {
+  if (p==null) return {bg:'var(--surface-2)',fg:'var(--text-muted)'};
+  const i=Math.min(Math.abs(p)/10,1);
+  return p>=0
+    ? {bg:`rgba(63,185,80,${.07+i*.22})`,fg:'var(--green)'}
+    : {bg:`rgba(248,81,73,${.07+i*.22})`,fg:'var(--red)'};
+}
+
+// ── Kill zone display ──────────────────────────────────────────────────────
+function updateKillZone() {
+  const el = document.getElementById('kz-badge');
+  const h = new Date().getUTCHours();
+  let zone = null, cls = 'kz-off', label = '⏸ Off-session';
+  if (h>=23||h<2)  { zone='Asia';    cls='kz-asia';   label='🌏 Asia Kill Zone';    }
+  if (h>=7 &&h<10) { zone='London';  cls='kz-london'; label='🇬🇧 London Kill Zone';  }
+  if (h>=13&&h<16) { zone='New York';cls='kz-ny';     label='🗽 NY Kill Zone';       }
+  el.className=`kz-badge ${cls}`;
+  el.textContent=label;
+}
+updateKillZone();
+setInterval(updateKillZone, 60000);
+
+// ── Tabs ───────────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.onclick = () => {
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-'+tab.dataset.panel).classList.add('active');
+    const p = tab.dataset.panel;
+    if (p==='smc')     loadSMC();
+    else if (p==='heatmap') loadHeatmap();
+    else loadScan(p);
+  };
+});
+
+// ── Config / connect ───────────────────────────────────────────────────────
+document.getElementById('btn-connect').onclick = () => {
+  API = document.getElementById('api-base').value.replace(/\/$/,'');
+  checkHealth();
+};
+document.getElementById('btn-refresh').onclick = refresh;
+
+function refresh() {
+  if (inFlight) return;
+  inFlight = true;
+  const tab = document.querySelector('.tab.active').dataset.panel;
+  const done = () => { inFlight=false; setTs(); };
+  const p = tab==='smc' ? loadSMC() : tab==='heatmap' ? loadHeatmap() : loadScan(tab);
+  Promise.resolve(p).then(done).catch(done);
+}
+
+const autoSel = document.getElementById('auto-sel');
+autoSel.onchange = () => {
+  if (autoTimer) clearInterval(autoTimer);
+  const ms = parseInt(autoSel.value);
+  if (ms>0) autoTimer=setInterval(refresh,ms);
+};
+autoSel.onchange();
+
+function setTs() {
+  document.getElementById('ts').textContent =
+    'updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+// ── Health check ───────────────────────────────────────────────────────────
+async function checkHealth() {
+  const dot=document.getElementById('dot'), txt=document.getElementById('status-text');
+  try {
+    const r = await fetch(API+'/api/health');
+    const d = await r.json();
+    if (d.status==='ok') {
+      dot.className='dot ok'; txt.textContent='connected';
+      // Get coin count from /api/coins
+      fetch(API+'/api/coins').then(r=>r.json()).then(data=>{
+        let total=0;
+        Object.values(data).forEach(cat=>total+=cat.length);
+        coinCount=total;
+        document.getElementById('coin-count').textContent=total+' coins';
+      }).catch(()=>{});
+      loadSMC();
+    } else throw new Error();
+  } catch {
+    dot.className='dot err';
+    txt.textContent='backend unreachable';
+  }
+}
+
+// ── SMC Scan ───────────────────────────────────────────────────────────────
+async function loadSMC() {
+  const el = document.getElementById('panel-smc-content');
+  el.innerHTML = '<div class="loading">⚡ Running SMC analysis across '+
+    (coinCount||'all')+' coins — 15m candles...</div>';
+  try {
+    const r = await fetch(API+'/api/scan/smc?top_n=20');
+    if (!r.ok) throw new Error('HTTP '+r.status);
+    const data = await r.json();
+    renderSMCTable(el, data);
+    setTs();
+  } catch (e) {
+    el.innerHTML = `<div class="err">SMC scan failed: ${e.message}<br>
+      Check Render logs — smc_engine.py must be in backend/ folder.</div>`;
+  }
+}
+
+function renderSMCTable(el, data) {
+  const results = data.results || [];
+  if (!results.length) {
+    el.innerHTML='<div class="empty">No SMC signals found. Check backend logs.</div>';
+    return;
+  }
+
+  // SMC concept keys to display as chips
+  const CONCEPTS = [
+    {key:'Market Structure', short:'MktStr'},
+    {key:'CHoCH',           short:'CHoCH'},
+    {key:'BOS',             short:'BOS'},
+    {key:'Order Block',     short:'OB'},
+    {key:'Fair Value Gap',  short:'FVG'},
+    {key:'Liquidity Sweep', short:'LiqSweep'},
+    {key:'Supply & Demand', short:'S&D'},
+    {key:'Fibonacci OTE',   short:'Fib OTE'},
+    {key:'Volume Profile',  short:'Vol Prof'},
+    {key:'Premium/Discount',short:'P/D'},
+  ];
+
+  let html = `<div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px">
+    Scanned ${data.count_scanned||'?'} coins · Showing top ${results.length} by confidence
+  </div>`;
+
+  html += `<div class="table-wrap"><table>
+  <thead><tr>
+    <th>Symbol</th><th>Direction</th><th>Confidence</th>
+    <th>Entry</th><th style="color:var(--red)">Stop Loss</th>
+    <th style="color:var(--green)">Target 1</th><th style="color:var(--green)">Target 2</th>
+    <th>RR</th><th>Session</th>
+    <th>Concepts Fired</th>
+    <th>Top Reason</th>
+  </tr></thead><tbody>`;
+
+  results.forEach(r => {
+    const dir  = r.direction || 'neutral';
+    const conf = r.confidence || 0;
+    const lvl  = r.levels || {};
+    const sess = r.session || {};
+    const ck   = r.checklist || {};
+    const reasons = r.reasons || [];
+
+    // Confidence bar color
+    const confColor = conf>=70 ? 'var(--green)' : conf>=50 ? 'var(--amber)' : 'var(--text-muted)';
+
+    // RR coloring
+    const rr = lvl.rr_ratio;
+    const rrStr = rr!=null ? rr+'x' : '—';
+    const rrClass = rr==null ? '' : rr>=2 ? 'rr-good' : rr>=1 ? 'rr-ok' : 'rr-bad';
+
+    // Session chip
+    const kz = sess.active_kill_zone;
+    const kzClass = kz==='London' ? 'sess-london' : kz==='New York' ? 'sess-ny' : kz==='Asia' ? 'sess-asia' : 'sess-off';
+    const kzLabel = kz || 'Off';
+    const kzHighlight = sess.high_probability ? '⚡' : '';
+
+    // Row class
+    const rowClass = dir==='long' ? 'row-long' : dir==='short' ? 'row-short' : '';
+
+    // Concept chips
+    const chips = CONCEPTS.map(c => {
+      const fired = ck[c.key] === true;
+      // also check fired array
+      const firedArr = (r.fired||[]).join(' ').toLowerCase();
+      const match = fired || firedArr.includes(c.key.toLowerCase().split(' ')[0].toLowerCase());
+      return `<span class="chip ${match?'chip-on':'chip-off'}">${c.short}</span>`;
+    }).join('');
+
+    // Top reason (first one, truncated)
+    const topReason = reasons[0] ? reasons[0].substring(0,60)+(reasons[0].length>60?'…':'') : '—';
+
+    html += `<tr class="${rowClass}">
+      <td><strong>${r.symbol.replace('USDT','')}</strong></td>
+      <td><span class="dir-pill dir-${dir}">${dir.toUpperCase()}</span></td>
+      <td>
+        <div class="conf-bar-wrap">
+          <div class="conf-bar"><div class="conf-fill" style="width:${conf}%;background:${confColor}"></div></div>
+          <span class="conf-pct" style="color:${confColor}">${conf}%</span>
+        </div>
+      </td>
+      <td class="num">${fp(lvl.entry)}</td>
+      <td class="num" style="color:var(--red)">${fp(lvl.stop_loss)}</td>
+      <td class="num" style="color:var(--green)">${fp(lvl.target1)}</td>
+      <td class="num" style="color:var(--green)">${fp(lvl.target2)}</td>
+      <td class="${rrClass}">${rrStr}</td>
+      <td><span class="sess ${kzClass}">${kzHighlight}${kzLabel}</span></td>
+      <td><div class="chips">${chips}</div></td>
+      <td class="reasons-cell">${topReason}</td>
+    </tr>`;
+  });
+
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
+}
+
+// ── Traditional scan ───────────────────────────────────────────────────────
+async function loadScan(mode) {
+  const el = document.getElementById('scan-'+mode);
+  el.innerHTML = '<div class="loading">Scanning coins...</div>';
+  try {
+    const r = await fetch(`${API}/api/scan/universe?modes=${mode}`);
+    if (!r.ok) throw new Error('HTTP '+r.status);
+    const data = await r.json();
+    renderScanTable(el, data, mode);
+    setTs();
+  } catch (e) {
+    el.innerHTML=`<div class="err">Scan failed: ${e.message}</div>`;
+  }
+}
+
+function renderScanTable(el, data, mode) {
+  const results = data.results || {};
+  const rows = [];
+  for (const [sym, result] of Object.entries(results)) {
+    const res = result.results ? result.results[mode] : result;
+    if (!res || res.error) continue;
+    rows.push({symbol:sym, ...res});
+  }
+  rows.sort((a,b)=>{
+    const aA=a.direction!=='neutral'?1:0, bA=b.direction!=='neutral'?1:0;
+    if (aA!==bA) return bA-aA;
+    return (b.confidence_pct||0)-(a.confidence_pct||0);
+  });
+  if (!rows.length) { el.innerHTML='<div class="empty">No data — check backend logs.</div>'; return; }
+
+  let html=`<div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px">${rows.length} coins</div>`;
+  html+=`<div class="table-wrap"><table>
+  <thead><tr>
+    <th>Symbol</th><th>Direction</th><th>Conf</th>
+    <th>Entry</th><th style="color:var(--red)">SL</th>
+    <th style="color:var(--green)">T1</th><th style="color:var(--green)">T2</th>
+    <th>RSI</th><th>Reasons</th>
+  </tr></thead><tbody>`;
+  rows.forEach(row=>{
+    const dir=row.direction||'neutral';
+    const conf=row.confidence_pct||0;
+    const lv=row.levels||{};
+    const confColor=conf>=70?'var(--green)':conf>=50?'var(--amber)':'var(--text-muted)';
+    const rowClass=dir==='long'?'row-long':dir==='short'?'row-short':'';
+    html+=`<tr class="${rowClass}">
+      <td><strong>${row.symbol.replace('USDT','')}</strong></td>
+      <td><span class="dir-pill dir-${dir}">${dir.toUpperCase()}</span></td>
+      <td><div class="conf-bar-wrap">
+        <div class="conf-bar"><div class="conf-fill" style="width:${conf}%;background:${confColor}"></div></div>
+        <span class="conf-pct" style="color:${confColor}">${conf}%</span>
+      </div></td>
+      <td class="num">${fp(lv.entry)}</td>
+      <td class="num" style="color:var(--red)">${fp(lv.stop_loss)}</td>
+      <td class="num" style="color:var(--green)">${fp(lv.target1)}</td>
+      <td class="num" style="color:var(--green)">${fp(lv.target2)}</td>
+      <td class="num">${row.indicators?row.indicators.rsi14??'—':'—'}</td>
+      <td class="reasons-cell">${(row.reasons||[]).join(', ')}</td>
+    </tr>`;
+  });
+  html+='</tbody></table></div>';
+  el.innerHTML=html;
+}
+
+// ── Heatmap ────────────────────────────────────────────────────────────────
+async function loadHeatmap() {
+  const el=document.getElementById('heatmap-content');
+  el.innerHTML='<div class="loading">Loading heatmap...</div>';
+  try {
+    const r=await fetch(API+'/api/heatmap');
+    if (!r.ok) throw new Error('HTTP '+r.status);
+    const data=await r.json();
+    renderHeatmap(el,data);
+    setTs();
+  } catch(e) {
+    el.innerHTML=`<div class="err">Heatmap failed: ${e.message}</div>`;
+  }
+}
+
+function renderHeatmap(el,data) {
+  let html='<div class="heatmap-grid">';
+  for (const [cat,cells] of Object.entries(data)) {
+    html+=`<div><div class="cat-label">${cat}</div><div class="heatmap-cells">`;
+    cells.forEach(c=>{
+      const col=pctCol(c.change_24h_pct);
+      const chg=fPct(c.change_24h_pct);
+      const dir=c.signal_direction||'neutral';
+      const sigColor=dir==='long'?'var(--green)':dir==='short'?'var(--red)':'var(--text-muted)';
+      html+=`<div class="cell" style="background:${col.bg}"
+                onclick="switchToSMC('${c.symbol}')">
+        <div class="cell-sym">${c.symbol.replace('USDT','').replace('USD','')}</div>
+        <div class="cell-chg" style="color:${col.fg}">${chg}</div>
+        <div class="cell-sig" style="color:${sigColor}">${dir.toUpperCase()}</div>
+      </div>`;
+    });
+    html+='</div></div>';
+  }
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+function switchToSMC(symbol) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelector('.tab[data-panel="smc"]').classList.add('active');
+  document.getElementById('panel-smc').classList.add('active');
+  loadSMC();
+}
+
+// ── Boot ───────────────────────────────────────────────────────────────────
+checkHealth();
+</script>
+</body>
+</html>
