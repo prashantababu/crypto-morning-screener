@@ -152,8 +152,8 @@ tr:hover td{background:var(--surface)}
 
 <!-- ── Tabs ── -->
 <div class="tabs">
-  <div class="tab smc-tab active" data-panel="smc">⚡ SMC Scan <span class="tab-badge">NEW</span></div>
-  <div class="tab breakout-tab" data-panel="breakout">🔥 Breakout <span class="tab-badge" style="background:var(--red-bg);color:var(--red)">MTF</span></div>
+  <div class="tab smc-tab" data-panel="smc">⚡ SMC Scan <span class="tab-badge">NEW</span></div>
+  <div class="tab breakout-tab active" data-panel="breakout">🔥 Breakout <span class="tab-badge" style="background:var(--red-bg);color:var(--red)">MTF</span></div>
   <div class="tab" data-panel="intraday">Intraday</div>
   <div class="tab" data-panel="btst">BTST</div>
   <div class="tab" data-panel="swing">Swing</div>
@@ -163,7 +163,7 @@ tr:hover td{background:var(--surface)}
 </div>
 
 <!-- ── SMC Scan panel (default) ── -->
-<div class="panel active" id="panel-smc">
+<div class="panel" id="panel-smc">
   <div class="mode-desc">
     <strong>Smart Money Concepts scan</strong> — 15m candles · Order Blocks · Fair Value Gaps · BOS/CHoCH ·
     Liquidity Sweeps · Supply &amp; Demand · Fibonacci OTE · Volume Profile · Premium/Discount ·
@@ -174,7 +174,7 @@ tr:hover td{background:var(--surface)}
 </div>
 
 <!-- ── Traditional scan panels ── -->
-<div class="panel" id="panel-breakout">
+<div class="panel active" id="panel-breakout">
   <div class="mode-desc"><strong>Multi-Timeframe Breakout + Retest</strong> — 4H structure → 1H retest → 15m BOS → 5m trigger · S/R + Trendline breakouts · SMC confluence · Fakeout detection · Entry/SL/T1/T2/T3. Ordered by score strongest first. 🔥 Enter now · 👀 Set alert · ⚡ Fakeout reversal</div>
   <div id="panel-breakout-content" class="loading">Connect to load breakout signals...</div>
 </div>
@@ -259,7 +259,7 @@ document.querySelectorAll('.tab').forEach(tab => {
     tab.classList.add('active');
     document.getElementById('panel-'+tab.dataset.panel).classList.add('active');
     const p = tab.dataset.panel;
-    if (p==='smc')       loadSMC();
+    if (p==='smc')       loadBreakout();
     else if (p==='breakout') loadBreakout();
     else if (p==='heatmap')  loadHeatmap();
     else loadScan(p);
