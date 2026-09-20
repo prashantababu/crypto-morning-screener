@@ -446,6 +446,128 @@ async function loadScan(mode) {
   }
 }
 
+// ── Context column helpers ─────────────────────────────────────────────────
+function smcBiasChip(row) {
+  // Derives SMC bias from EMA alignment and RSI without extra API call
+  const ind = row.indicators || {};
+  const rsi = ind.rsi14;
+  const ema9 = ind.ema9; const ema21 = ind.ema21;
+  const close = ind.close;
+  const rsns = (row.reasons||[]).join(' ').toLowerCase();
+  let bias = 'neutral', col = 'var(--text-muted)';
+  if (ema9 && ema21 && close) {
+    if (ema9 > ema21 && close > ema9 && rsi > 50)  { bias='Bullish'; col='var(--green)'; }
+    else if (ema9 < ema21 && close < ema9 && rsi < 50) { bias='Bearish'; col='var(--red)'; }
+    else if (close > ema21) { bias='Mild Bull'; col='var(--green)'; }
+    else { bias='Mild Bear'; col='var(--amber)'; }
+  }
+  return `<span style="font-size:10px;font-weight:600;color:${col}">${bias}</span>`;
+}
+
+function nearSRChip(row) {
+  // Flags if price is within 0.5% of entry (at key level) or far from it
+  const ind = row.indicators || {};
+  const close = ind.close; const entry = (row.levels||{}).entry;
+  if (!close || !entry) return '<span style="font-size:10px;color:var(--text-muted)">—</span>';
+  const dist = Math.abs((close - entry) / entry * 100);
+  if (dist <= 0.5) return '<span style="font-size:10px;font-weight:600;color:var(--green)">AT LEVEL ◀</span>';
+  return `<span style="font-size:10px;color:var(--text-muted)">${dist.toFixed(1)}% away</span>`;
+}
+
+function volSpikeChip(row) {
+  const rsns = (row.reasons||[]).join(' ').toLowerCase();
+  const hasVol = rsns.includes('volume') || rsns.includes('obv');
+  return hasVol
+    ? '<span class="chip chip-on" style="font-size:9px">VOL↑</span>'
+    : '<span class="chip chip-off" style="font-size:9px">vol</span>';
+}
+
+function breakoutChip(row) {
+  const rsns = (row.reasons||[]).join(' ').toLowerCase();
+  if (rsns.includes('breakout') || rsns.includes('break')) return '<span class="chip chip-on" style="font-size:9px">BKT✓</span>';
+  if (rsns.includes('retest') || rsns.includes('support') || rsns.includes('resistance')) return '<span class="chip chip-warn" style="font-size:9px">S/R</span>';
+  return '<span class="chip chip-off" style="font-size:9px">no bkt</span>';
+}
+
+function trendStrengthChip(row) {
+  const ind = row.indicators || {};
+  const ema21 = ind.ema21; const ema50 = ind.ema50; const close = ind.close;
+  if (!ema21 || !ema50) return '<span style="font-size:10px;color:var(--text-muted)">—</span>';
+  const spread = Math.abs((ema21 - ema50) / ema50 * 100);
+  const above = close > ema50;
+  const col = above ? 'var(--green)' : 'var(--red)';
+  const label = spread > 3 ? 'STRONG' : spread > 1 ? 'MOD' : 'WEAK';
+  return `<span style="font-size:10px;font-weight:600;color:${col}">${label} ${above?'↑':'↓'}</span>`;
+}
+
+function overnightRiskChip(row) {
+  const ind = row.indicators || {};
+  const rsi = ind.rsi14;
+  if (!rsi) return '<span style="font-size:10px;color:var(--text-muted)">—</span>';
+  if (rsi > 75) return '<span style="font-size:10px;color:var(--red);font-weight:600">HIGH RSI</span>';
+  if (rsi < 25) return '<span style="font-size:10px;color:var(--green);font-weight:600">OVS'LD</span>';
+  if (rsi > 60) return '<span style="font-size:10px;color:var(--amber)">Caution</span>';
+  return '<span style="font-size:10px;color:var(--green)">OK</span>';
+}
+
+function rangeQualityChip(row) {
+  const rsns = (row.reasons||[]).join(' ').toLowerCase();
+  if (rsns.includes('bb') || rsns.includes('bollinger') || rsns.includes('band')) {
+    const ind = row.indicators || {};
+    if (rsns.includes('squeeze')) return '<span style="font-size:10px;color:var(--amber);font-weight:600">SQUEEZE</span>';
+    return '<span style="font-size:10px;color:var(--green)">BB OK</span>';
+  }
+  return '<span style="font-size:10px;color:var(--text-muted)">—</span>';
+}
+
+function meanRevChip(row) {
+  const ind = row.indicators || {};
+  const rsi = ind.rsi14;
+  if (!rsi) return '—';
+  if (rsi < 35) return '<span style="font-size:10px;color:var(--green);font-weight:600">↑ MR Long</span>';
+  if (rsi > 65) return '<span style="font-size:10px;color:var(--red);font-weight:600">↓ MR Short</span>';
+  return '<span style="font-size:10px;color:var(--text-muted)">Mid-range</span>';
+}
+
+function accumChip(row) {
+  const rsns = (row.reasons||[]).join(' ').toLowerCase();
+  const dir = row.direction || 'neutral';
+  if (dir === 'long' && rsns.includes('ema'))
+    return '<span style="font-size:10px;color:var(--green);font-weight:600">ACCUM ✓</span>';
+  if (dir === 'short')
+    return '<span style="font-size:10px;color:var(--red)">DIST</span>';
+  return '<span style="font-size:10px;color:var(--text-muted)">Watch</span>';
+}
+
+// ── Context column config per tab ──────────────────────────────────────────
+const TAB_CONTEXT = {
+  intraday: {
+    cols: ['SMC Bias','Near S/R','Vol'],
+    cells: (row) => [smcBiasChip(row), nearSRChip(row), volSpikeChip(row)],
+    desc: '15m · EMA/RSI/VWAP · SMC Bias = EMA+RSI alignment · Near S/R = distance to key level'
+  },
+  btst: {
+    cols: ['SMC Bias','Overnight Risk','Breakout'],
+    cells: (row) => [smcBiasChip(row), overnightRiskChip(row), breakoutChip(row)],
+    desc: '1H · EMA+MACD+OBV · Overnight Risk = RSI extremes that may reverse overnight'
+  },
+  swing: {
+    cols: ['Trend Strength','SMC Bias','Breakout'],
+    cells: (row) => [trendStrengthChip(row), smcBiasChip(row), breakoutChip(row)],
+    desc: '4H · EMA21/50+MACD+BB · Trend Strength = EMA21/50 spread and alignment'
+  },
+  range: {
+    cols: ['Range Quality','Mean Rev','SMC Bias'],
+    cells: (row) => [rangeQualityChip(row), meanRevChip(row), smcBiasChip(row)],
+    desc: '1H · BB mean-reversion · Mean Rev = RSI-based reversal probability at range boundary'
+  },
+  investment: {
+    cols: ['Trend','Accumulation','Risk'],
+    cells: (row) => [trendStrengthChip(row), accumChip(row), overnightRiskChip(row)],
+    desc: '1D · Long-only trend · Accumulation = EMA trend confirms buy zone for DCA'
+  },
+};
+
 function renderScanTable(el, data, mode) {
   const results = data.results || {};
   const rows = [];
@@ -461,20 +583,34 @@ function renderScanTable(el, data, mode) {
   });
   if (!rows.length) { el.innerHTML='<div class="empty">No data — check backend logs.</div>'; return; }
 
-  let html=`<div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px">${rows.length} coins</div>`;
+  // Get context config for this tab (fallback to empty if mode unknown)
+  const ctx = TAB_CONTEXT[mode] || { cols:[], cells:()=>[], desc:'' };
+
+  let html=`<div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px">
+    ${rows.length} coins · ${ctx.desc}
+  </div>`;
+
+  // Context column headers
+  const ctxHeaders = ctx.cols.map(c=>`<th style="color:var(--amber)">${c}</th>`).join('');
+
   html+=`<div class="table-wrap"><table>
   <thead><tr>
     <th>Symbol</th><th>Direction</th><th>Conf</th>
     <th>Entry</th><th style="color:var(--red)">SL</th>
     <th style="color:var(--green)">T1</th><th style="color:var(--green)">T2</th>
-    <th>RSI</th><th>Reasons</th>
+    <th>RSI</th>${ctxHeaders}<th>Reasons</th>
   </tr></thead><tbody>`;
+
   rows.forEach(row=>{
     const dir=row.direction||'neutral';
     const conf=row.confidence_pct||0;
     const lv=row.levels||{};
     const confColor=conf>=70?'var(--green)':conf>=50?'var(--amber)':'var(--text-muted)';
     const rowClass=dir==='long'?'row-long':dir==='short'?'row-short':'';
+
+    // Build context cells for this tab
+    const ctxCells = ctx.cells(row).map(c=>`<td>${c}</td>`).join('');
+
     html+=`<tr class="${rowClass}">
       <td><strong>${row.symbol.replace('USDT','')}</strong></td>
       <td><span class="dir-pill dir-${dir}">${dir.toUpperCase()}</span></td>
@@ -487,6 +623,7 @@ function renderScanTable(el, data, mode) {
       <td class="num" style="color:var(--green)">${fp(lv.target1)}</td>
       <td class="num" style="color:var(--green)">${fp(lv.target2)}</td>
       <td class="num">${row.indicators?row.indicators.rsi14??'—':'—'}</td>
+      ${ctxCells}
       <td class="reasons-cell">${(row.reasons||[]).join(', ')}</td>
     </tr>`;
   });
@@ -518,11 +655,17 @@ function renderHeatmap(el,data) {
       const chg=fPct(c.change_24h_pct);
       const dir=c.signal_direction||'neutral';
       const sigColor=dir==='long'?'var(--green)':dir==='short'?'var(--red)':'var(--text-muted)';
-      html+=`<div class="cell" style="background:${col.bg}"
+      // Breakout badge: strong signal from existing scan data
+    const conf = c.signal_confidence || 0;
+    const bktBadge = conf >= 70 && dir !== 'neutral'
+      ? `<div style="font-size:9px;font-weight:700;color:${dir==='long'?'var(--green)':'var(--red)'}">${conf}% ${dir==='long'?'LONG':'SHORT'}</div>`
+      : '';
+    html+=`<div class="cell" style="background:${col.bg};${conf>=70&&dir!=='neutral'?'border:1px solid '+(dir==='long'?'var(--green)':'var(--red)')+'':''}"
                 onclick="switchToSMC('${c.symbol}')">
         <div class="cell-sym">${c.symbol.replace('USDT','').replace('USD','')}</div>
         <div class="cell-chg" style="color:${col.fg}">${chg}</div>
         <div class="cell-sig" style="color:${sigColor}">${dir.toUpperCase()}</div>
+        ${bktBadge}
       </div>`;
     });
     html+='</div></div>';
