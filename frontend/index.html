@@ -53,6 +53,8 @@ body{background:var(--bg);color:var(--text-primary);font-family:-apple-system,Bl
 .tab:hover{color:var(--text-primary);background:var(--surface-2)}
 .tab.active{color:var(--text-primary);border-bottom-color:var(--blue);background:var(--bg)}
 .tab.smc-tab{color:var(--amber)}
+.tab.breakout-tab{color:var(--red)}
+.tab.breakout-tab.active{color:var(--red);border-bottom-color:var(--red)}
 .tab.smc-tab.active{color:var(--amber);border-bottom-color:var(--amber)}
 .tab-badge{font-size:9px;padding:1px 5px;border-radius:8px;margin-left:5px;background:var(--amber-bg);color:var(--amber);font-weight:700}
 
@@ -151,6 +153,7 @@ tr:hover td{background:var(--surface)}
 <!-- ── Tabs ── -->
 <div class="tabs">
   <div class="tab smc-tab active" data-panel="smc">⚡ SMC Scan <span class="tab-badge">NEW</span></div>
+  <div class="tab breakout-tab" data-panel="breakout">🔥 Breakout <span class="tab-badge" style="background:var(--red-bg);color:var(--red)">MTF</span></div>
   <div class="tab" data-panel="intraday">Intraday</div>
   <div class="tab" data-panel="btst">BTST</div>
   <div class="tab" data-panel="swing">Swing</div>
@@ -171,6 +174,10 @@ tr:hover td{background:var(--surface)}
 </div>
 
 <!-- ── Traditional scan panels ── -->
+<div class="panel" id="panel-breakout">
+  <div class="mode-desc"><strong>Multi-Timeframe Breakout + Retest</strong> — 4H structure → 1H retest → 15m BOS → 5m trigger · S/R + Trendline breakouts · SMC confluence · Fakeout detection · Entry/SL/T1/T2/T3. Ordered by score strongest first. 🔥 Enter now · 👀 Set alert · ⚡ Fakeout reversal</div>
+  <div id="panel-breakout-content" class="loading">Connect to load breakout signals...</div>
+</div>
 <div class="panel" id="panel-intraday">
   <div class="mode-desc">Intraday — 15m candles · EMA 9/21 · RSI(14) · VWAP · same-day exit</div>
   <div id="scan-intraday" class="loading">Connect...</div>
@@ -252,8 +259,9 @@ document.querySelectorAll('.tab').forEach(tab => {
     tab.classList.add('active');
     document.getElementById('panel-'+tab.dataset.panel).classList.add('active');
     const p = tab.dataset.panel;
-    if (p==='smc')     loadSMC();
-    else if (p==='heatmap') loadHeatmap();
+    if (p==='smc')       loadSMC();
+    else if (p==='breakout') loadBreakout();
+    else if (p==='heatmap')  loadHeatmap();
     else loadScan(p);
   };
 });
@@ -270,7 +278,7 @@ function refresh() {
   inFlight = true;
   const tab = document.querySelector('.tab.active').dataset.panel;
   const done = () => { inFlight=false; setTs(); };
-  const p = tab==='smc' ? loadSMC() : tab==='heatmap' ? loadHeatmap() : loadScan(tab);
+  const p = tab==='smc' ? loadSMC() : tab==='breakout' ? loadBreakout() : tab==='heatmap' ? loadHeatmap() : loadScan(tab);
   Promise.resolve(p).then(done).catch(done);
 }
 
@@ -532,6 +540,76 @@ function switchToSMC(symbol) {
 }
 
 // ── Boot ───────────────────────────────────────────────────────────────────
+
+const SIGNAL_ICONS={CONFIRMED_RETEST:'🔥',FRESH_BREAKOUT:'👀',FAKEOUT:'⚡',NO_SIGNAL:'—'};
+const SIGNAL_COLORS={CONFIRMED_RETEST:'var(--green)',FRESH_BREAKOUT:'var(--amber)',FAKEOUT:'var(--purple)',NO_SIGNAL:'var(--text-muted)'};
+
+async function loadBreakout(){
+  const el=document.getElementById('panel-breakout-content');
+  el.innerHTML='<div class="loading">🔥 Multi-timeframe breakout scan (4H/1H/15m/5m) — may take 20-30s...</div>';
+  try{
+    const r=await fetch(API+'/api/scan/breakout?top_n=25&min_score=40');
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const data=await r.json();
+    renderBreakout(el,data);
+    setTs();
+  }catch(e){
+    el.innerHTML=`<div class="err">Breakout scan failed: ${e.message}</div>`;
+  }
+}
+function rrCell(rr){
+  if(rr==null) return '<td class="num">—</td>';
+  const cls=rr>=3?'rr-good':rr>=1.5?'rr-ok':'rr-bad';
+  return `<td class="num ${cls}">${rr}x</td>`;
+}
+function renderBreakout(el,data){
+  const results=data.results||[];
+  if(!results.length){el.innerHTML='<div class="empty">No breakout signals above minimum score. Markets may be ranging.</div>';return;}
+  let html=`<div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px">
+    Scanned ${data.count_scanned||'?'} coins across 4 timeframes · ${results.length} signals (score≥${data.min_score||40})
+    | 🔥 Enter now &nbsp; 👀 Set alert &nbsp; ⚡ Fakeout/reversal
+  </div><div class="table-wrap"><table><thead><tr>
+    <th>Symbol</th><th>Signal</th><th>Dir</th><th>Score</th>
+    <th>Entry</th><th style="color:var(--red)">SL</th>
+    <th style="color:var(--green)">T1</th><th style="color:var(--green)">T2</th><th style="color:var(--green)">T3</th>
+    <th>RR1</th><th>RR2</th><th>RR3</th>
+    <th>SMC</th><th>Vol</th><th>4H</th><th>1H</th><th>15m</th><th>5m</th><th>Reason</th>
+  </tr></thead><tbody>`;
+  results.forEach(r=>{
+    const dir=r.direction||'neutral',sc=r.score||0,lv=r.levels||{},st=r.signal_type||'NO_SIGNAL';
+    const smc=r.smc_confluence||{},vol=r.volume||{},tfd=r.timeframe_detail||{},rsns=r.reasons||[];
+    const scCol=sc>=80?'var(--green)':sc>=60?'var(--amber)':'var(--red)';
+    const rowBg=dir==='bullish'?'background:var(--green-dim)':dir==='bearish'?'background:rgba(248,81,73,.04)':'';
+    const icon=SIGNAL_ICONS[st]||'—',sigCol=SIGNAL_COLORS[st]||'var(--text-muted)';
+    const bo4h=(tfd['4H']||{}).breakout||{},rt1h=(tfd['1H']||{}).retest||{};
+    const bo15m=(tfd['15m']||{}).breakout||{},bo5m=(tfd['5m']||{}).breakout||{};
+    const smcC=[smc.ob?'<span class="chip chip-on">OB</span>':'<span class="chip chip-off">OB</span>',
+                smc.fvg?'<span class="chip chip-on">FVG</span>':'<span class="chip chip-off">FVG</span>',
+                smc.liq_sweep?'<span class="chip chip-on">LIQ⚡</span>':'<span class="chip chip-off">LIQ</span>'].join('');
+    const topR=rsns[0]?(rsns[0].substring(0,55)+(rsns[0].length>55?'…':'')):' —';
+    html+=`<tr style="${rowBg}">
+      <td><strong>${r.symbol.replace('USDT','')}</strong></td>
+      <td style="color:${sigCol};font-weight:600">${icon} ${st.replace(/_/g,' ')}</td>
+      <td><span class="dir-pill ${dir==='bullish'?'dir-long':dir==='bearish'?'dir-short':'dir-neutral'}">${dir==='bullish'?'LONG':dir==='bearish'?'SHORT':'—'}</span></td>
+      <td><div class="conf-bar-wrap"><div class="conf-bar"><div class="conf-fill" style="width:${sc}%;background:${scCol}"></div></div><span class="conf-pct" style="color:${scCol}">${sc}</span></div></td>
+      <td class="num">${fp(lv.entry)}</td><td class="num" style="color:var(--red)">${fp(lv.stop_loss)}</td>
+      <td class="num" style="color:var(--green)">${fp(lv.target1)}</td>
+      <td class="num" style="color:var(--green)">${fp(lv.target2)}</td>
+      <td class="num" style="color:var(--green)">${fp(lv.target3)}</td>
+      ${rrCell(lv.rr1)}${rrCell(lv.rr2)}${rrCell(lv.rr3)}
+      <td><div class="chips">${smcC}</div></td>
+      <td style="font-size:11px;color:${vol.confirmed?'var(--green)':'var(--amber)'}">${vol.ratio!=null?vol.ratio+'×':'—'}</td>
+      <td style="font-size:11px;color:${bo4h.valid?'var(--green)':'var(--text-muted)'}">${bo4h.valid?'✓ '+bo4h.candles_ago+'c':'—'}</td>
+      <td style="font-size:11px;color:${rt1h.stage==='confirmed'?'var(--green)':rt1h.retested?'var(--amber)':'var(--text-muted)'}">${rt1h.stage==='confirmed'?'✓ Hold':rt1h.retested?'⏳':'—'}</td>
+      <td style="font-size:11px;color:${bo15m.valid?'var(--green)':'var(--text-muted)'}">${bo15m.valid?'✓ BOS':'—'}</td>
+      <td style="font-size:11px;color:${bo5m.valid?'var(--green)':'var(--text-muted)'}">${bo5m.valid?'✓':'—'}</td>
+      <td class="reasons-cell">${topR}</td>
+    </tr>`;
+  });
+  html+='</tbody></table></div>';
+  el.innerHTML=html;
+}
+
 checkHealth();
 </script>
 </body>

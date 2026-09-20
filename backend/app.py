@@ -6,6 +6,7 @@ Endpoints:
   GET /api/scan?symbol=BTCUSDT&modes=intraday,swing
   GET /api/scan/universe?modes=intraday          -> scans full 118-coin watchlist
   GET /api/scan/smc                              -> SMC scan top-20 by confidence (15m)
+  GET /api/scan/breakout                         -> MTF breakout+retest scan (4H/1H/15m/5m)
   GET /api/heatmap                                -> heatmap grid data
   GET /api/coins                                  -> coin universe metadata
 
@@ -27,6 +28,7 @@ import logging
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from smc_engine import run_smc_scan
+from breakout_engine import run_breakout_scan
 # Make sibling subpackages importable with flat module names (sources.*,
 # strategies.*) regardless of the working directory this is launched from.
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -213,6 +215,58 @@ def scan_smc():
         "count_returned": len(top),
         "top_n": top_n,
         "results": top,
+    })
+
+
+@app.route("/api/scan/breakout")
+def scan_breakout():
+    """
+    Multi-timeframe breakout + retest scan across all coins.
+    Fetches 4H / 1H / 15m / 5m candles per coin and runs the
+    breakout-retest engine with SMC confluence scoring.
+
+    Query params:
+      top_n    : results to return (default 20, max 50)
+      min_score: minimum score to include (default 40)
+    """
+    top_n     = min(int(request.args.get("top_n",    20)), 50)
+    min_score = int(request.args.get("min_score", 40))
+
+    symbols = all_symbols()
+
+    # Fetch all required intervals in parallel universe passes
+    logger.info(f"Breakout scan: fetching 4 timeframes for {len(symbols)} coins")
+    raw_4h  = fetch_universe_klines(symbols, interval="4h",  limit=120)
+    raw_1h  = fetch_universe_klines(symbols, interval="1h",  limit=100)
+    raw_15m = fetch_universe_klines(symbols, interval="15m", limit=100)
+    raw_5m  = fetch_universe_klines(symbols, interval="5m",  limit=80)
+
+    results = []
+    for symbol in symbols:
+        c4h  = raw_4h.get(symbol,  {}).get("candles") or []
+        c1h  = raw_1h.get(symbol,  {}).get("candles") or []
+        c15m = raw_15m.get(symbol, {}).get("candles") or []
+        c5m  = raw_5m.get(symbol,  {}).get("candles") or []
+
+        if len(c4h) < 20:
+            continue
+        try:
+            sig = run_breakout_scan(symbol, c4h, c1h, c15m, c5m)
+            if sig["score"] >= min_score and sig["signal_type"] != "NO_SIGNAL":
+                results.append(sig)
+        except Exception as e:
+            logger.warning(f"Breakout scan error {symbol}: {e}")
+
+    # Sort by score descending — strongest signal first
+    results.sort(key=lambda x: x["score"], reverse=True)
+    top = results[:top_n]
+
+    return jsonify({
+        "count_scanned":  len(symbols),
+        "count_returned": len(top),
+        "top_n":          top_n,
+        "min_score":      min_score,
+        "results":        top,
     })
 
 @app.route("/api/heatmap")
