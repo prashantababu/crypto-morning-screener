@@ -505,7 +505,7 @@ function overnightRiskChip(row) {
   const rsi = ind.rsi14;
   if (!rsi) return '<span style="font-size:10px;color:var(--text-muted)">—</span>';
   if (rsi > 75) return '<span style="font-size:10px;color:var(--red);font-weight:600">HIGH RSI</span>';
-  if (rsi < 25) return '<span style="font-size:10px;color:var(--green);font-weight:600">OVS'LD</span>';
+  if (rsi < 25) return '<span style="font-size:10px;color:var(--green);font-weight:600">OVRSLD</span>';
   if (rsi > 60) return '<span style="font-size:10px;color:var(--amber)">Caution</span>';
   return '<span style="font-size:10px;color:var(--green)">OK</span>';
 }
