@@ -3,12 +3,12 @@ Crypto Morning Screener - Flask API.
 
 Endpoints:
   GET /api/health
-  GET /api/scan?symbol=BTCUSDT&modes=intraday,swing
-  GET /api/scan/universe?modes=intraday          -> scans full 118-coin watchlist
-  GET /api/scan/smc                              -> SMC scan top-20 by confidence (15m)
-  GET /api/scan/breakout                         -> MTF breakout+retest scan (4H/1H/15m/5m)
-  GET /api/heatmap                                -> heatmap grid data
-  GET /api/coins                                  -> coin universe metadata
+  GET /api/scan?symbol=BTCUSD&modes=intraday,swing
+  GET /api/scan/universe?modes=intraday          -> scans full 118-coin universe
+  GET /api/scan/smc                              -> Smart Money Concepts scan (top 20 by confidence)
+  GET /api/scan/breakout                         -> Breakout + Retest scan (30 priority coins)
+  GET /api/heatmap                               -> heatmap grid data
+  GET /api/coins                                 -> coin universe metadata
 
 Caching: simple in-memory TTL cache keyed by (symbol, interval). This is
 intentionally swappable for Redis later (same pattern as the F&O Morning
@@ -25,10 +25,10 @@ import os
 import sys
 import time
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from smc_engine import run_smc_scan
-from breakout_engine import run_breakout_scan
+
 # Make sibling subpackages importable with flat module names (sources.*,
 # strategies.*) regardless of the working directory this is launched from.
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -43,6 +43,20 @@ from coin_universe import COIN_UNIVERSE, all_symbols, symbol_meta
 from price_waterfall import fetch_universe_klines, get_klines_with_fallback, SourceError
 from engine import run_scan, quick_signal, MODE_CONFIG, MODES
 from heatmap import build_heatmap
+
+# Optional engines — imported with fallback so the app still starts if a file
+# is missing (helpful during incremental deploys).
+try:
+    from smc_engine import run_smc_scan
+    _HAS_SMC = True
+except ImportError:
+    _HAS_SMC = False
+
+try:
+    from breakout_engine import run_breakout_scan
+    _HAS_BREAKOUT = True
+except ImportError:
+    _HAS_BREAKOUT = False
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("crypto_screener_api")
@@ -112,11 +126,53 @@ def get_candles_by_interval_for_modes(symbol, modes):
 
 
 # ---------------------------------------------------------------------------
+# Priority coin lists (kept short to avoid Render free-tier timeout)
+# ---------------------------------------------------------------------------
+
+# 30 highest-liquidity / highest-volatility coins for the Breakout scan.
+# Scanning 4 timeframes × 30 coins = 120 kline fetches; fits within 90s.
+BREAKOUT_PRIORITY = [
+    # Tier 1 majors
+    "BTCUSD", "ETHUSD", "SOLUSD", "BNBUSD", "XRPUSD",
+    # Large caps with strong breakout tendencies
+    "AVAXUSD", "SUIUSD", "DOTD", "LINKUSD", "MATICUSD",
+    # High-beta / high-volatility
+    "PEPEUSD", "DOGEUSD", "SHIBUSD", "WIFUSD", "BONKUSD",
+    "FLOKIUSD", "MOGUSD", "PONKEUSD", "MEMEUSD", "DOGUSD",
+    # Mid-cap momentum
+    "INJUSD", "TIAUSD", "OPUSD", "ARBUSD", "APTUSD",
+    # DeFi blue-chips
+    "UNIUSD", "AAVEUSD", "JUPUSD",
+    # Narrative / trending
+    "WLDUSD", "PYTHUSD",
+]
+
+# 40 coins for the SMC scan (15m only — lighter than breakout).
+SMC_PRIORITY = [
+    "BTCUSD", "ETHUSD", "SOLUSD", "BNBUSD", "XRPUSD",
+    "AVAXUSD", "SUIUSD", "DOTD", "LINKUSD", "MATICUSD",
+    "PEPEUSD", "DOGEUSD", "SHIBUSD", "WIFUSD", "BONKUSD",
+    "FLOKIUSD", "MOGUSD", "PONKEUSD", "MEMEUSD", "DOGUSD",
+    "INJUSD", "TIAUSD", "OPUSD", "ARBUSD", "APTUSD",
+    "UNIUSD", "AAVEUSD", "JUPUSD", "WLDUSD", "PYTHUSD",
+    "SEIUSD", "ORDIUSD", "STXUSD", "RUNEUSD", "LDOUSD",
+    "ENAUSD", "ATHEUSD", "TRUMPUSD", "POLUSD", "IOTUSD",
+]
+
+
+# ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
 @app.route("/api/health")
 def health():
-    return jsonify({"status": "ok", "time": time.time()})
+    return jsonify({
+        "status": "ok",
+        "time": time.time(),
+        "engines": {
+            "smc": _HAS_SMC,
+            "breakout": _HAS_BREAKOUT,
+        }
+    })
 
 
 @app.route("/api/coins")
@@ -171,110 +227,134 @@ def scan_universe():
     return jsonify({"modes": modes, "results": results, "count": len(symbols)})
 
 
-
+# ---------------------------------------------------------------------------
+# SMC scan endpoint
+# ---------------------------------------------------------------------------
 @app.route("/api/scan/smc")
 def scan_smc():
     """
-    SMC (Smart Money Concepts) scan across all 118 coins using 15m candles.
-    Returns top 20 by confidence score, sorted highest first.
-    Each result includes: direction, confidence, which concepts fired,
-    entry / stop-loss / target1 / target2, session kill zone status.
+    Smart Money Concepts scan.
 
     Query params:
-      top_n   : number of results to return (default 20, max 50)
-      min_conf: minimum confidence to include (default 0, show all in top_n)
+      top_n     (int, default 20) — return this many results sorted by confidence
+      min_score (int, default 50) — minimum confidence score to include
     """
-    top_n    = min(int(request.args.get("top_n", 20)), 50)
-    min_conf = int(request.args.get("min_conf", 0))
+    if not _HAS_SMC:
+        return jsonify({"error": "smc_engine.py not found on server — upload it to backend/"}), 503
 
-    symbols = all_symbols()
+    top_n = int(request.args.get("top_n", 20))
+    min_score = int(request.args.get("min_score", 50))
 
-    # Fetch 15m candles for entire universe in one waterfall pass
-    # 100 candles = ~25 hours of 15m bars — enough for SMC structure detection
-    raw_15m = fetch_universe_klines(symbols, interval="15m", limit=100)
+    symbols = SMC_PRIORITY
+    logger.info(f"SMC scan: {len(symbols)} coins, top_n={top_n}, min_score={min_score}")
+
+    # Fetch 15m candles for all SMC-priority coins in a single batch pass.
+    raw = fetch_universe_klines(symbols, interval="15m", limit=100)
 
     results = []
     for symbol in symbols:
-        payload = raw_15m.get(symbol, {})
-        candles = payload.get("candles") or []
-        if len(candles) < 30:
+        payload = raw.get(symbol, {})
+        candles = payload.get("candles")
+        if not candles or len(candles) < 50:
+            logger.warning(f"SMC skip {symbol}: only {len(candles) if candles else 0} candles")
             continue
         try:
             sig = run_smc_scan(symbol, candles)
-            if sig["confidence"] >= min_conf:
+            if sig and sig.get("confidence", 0) >= min_score:
                 results.append(sig)
         except Exception as e:
-            logger.warning(f"SMC scan error {symbol}: {e}")
+            logger.error(f"SMC error {symbol}: {e}")
 
-    # Sort by confidence descending, take top_n
-    results.sort(key=lambda x: x["confidence"], reverse=True)
-    top = results[:top_n]
+    # Sort by confidence descending, return top_n
+    results.sort(key=lambda x: x.get("confidence", 0), reverse=True)
+    results = results[:top_n]
 
     return jsonify({
-        "count_scanned": len(symbols),
-        "count_returned": len(top),
-        "top_n": top_n,
-        "results": top,
+        "scan": "smc",
+        "count": len(results),
+        "scanned": len(symbols),
+        "results": results,
     })
 
 
+# ---------------------------------------------------------------------------
+# Breakout scan endpoint
+# ---------------------------------------------------------------------------
 @app.route("/api/scan/breakout")
 def scan_breakout():
     """
-    Multi-timeframe breakout + retest scan across all coins.
-    Fetches 4H / 1H / 15m / 5m candles per coin and runs the
-    breakout-retest engine with SMC confluence scoring.
+    Multi-timeframe breakout + retest scan.
 
     Query params:
-      top_n    : results to return (default 20, max 50)
-      min_score: minimum score to include (default 40)
+      top_n     (int, default 25) — return this many results sorted by score
+      min_score (int, default 40) — minimum score to include
     """
-    top_n     = min(int(request.args.get("top_n",    20)), 50)
+    if not _HAS_BREAKOUT:
+        return jsonify({"error": "breakout_engine.py not found on server — upload it to backend/"}), 503
+
+    top_n = int(request.args.get("top_n", 25))
     min_score = int(request.args.get("min_score", 40))
 
-    symbols = all_symbols()
+    symbols = BREAKOUT_PRIORITY
+    logger.info(f"Breakout scan: {len(symbols)} coins, top_n={top_n}, min_score={min_score}")
 
-    # Fetch all required intervals in parallel universe passes
-    logger.info(f"Breakout scan: fetching 4 timeframes for {len(symbols)} coins")
-    raw_4h  = fetch_universe_klines(symbols, interval="4h",  limit=120)
-    raw_1h  = fetch_universe_klines(symbols, interval="1h",  limit=100)
-    raw_15m = fetch_universe_klines(symbols, interval="15m", limit=100)
-    raw_5m  = fetch_universe_klines(symbols, interval="5m",  limit=80)
+    # Fetch all four timeframes in parallel batch passes.
+    # 4H: 100 candles (~16 days), 1H: 100 candles (~4 days),
+    # 15m: 100 candles (~25 hrs), 5m: 100 candles (~8 hrs).
+    t0 = time.time()
+
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        f4h  = pool.submit(fetch_universe_klines, symbols, "4h",  100)
+        f1h  = pool.submit(fetch_universe_klines, symbols, "1h",  100)
+        f15m = pool.submit(fetch_universe_klines, symbols, "15m", 100)
+        f5m  = pool.submit(fetch_universe_klines, symbols, "5m",  100)
+        raw_4h  = f4h.result()
+        raw_1h  = f1h.result()
+        raw_15m = f15m.result()
+        raw_5m  = f5m.result()
+
+    fetch_ms = int((time.time() - t0) * 1000)
+    logger.info(f"Breakout fetch complete in {fetch_ms}ms")
 
     results = []
     for symbol in symbols:
-        c4h  = raw_4h.get(symbol,  {}).get("candles") or []
-        c1h  = raw_1h.get(symbol,  {}).get("candles") or []
-        c15m = raw_15m.get(symbol, {}).get("candles") or []
-        c5m  = raw_5m.get(symbol,  {}).get("candles") or []
+        c4h  = (raw_4h.get(symbol)  or {}).get("candles")
+        c1h  = (raw_1h.get(symbol)  or {}).get("candles")
+        c15m = (raw_15m.get(symbol) or {}).get("candles")
+        c5m  = (raw_5m.get(symbol)  or {}).get("candles")
 
-        if len(c4h) < 20:
+        # Need at least 4H and 1H data to be useful
+        if not c4h or len(c4h) < 30 or not c1h or len(c1h) < 30:
+            logger.warning(f"Breakout skip {symbol}: insufficient 4H/1H data")
             continue
+
         try:
-            sig = run_breakout_scan(symbol, c4h, c1h, c15m, c5m)
-            if sig["score"] >= min_score and sig["signal_type"] != "NO_SIGNAL":
+            sig = run_breakout_scan(symbol, c4h, c1h, c15m or [], c5m or [])
+            if sig and sig.get("score", 0) >= min_score:
                 results.append(sig)
         except Exception as e:
-            logger.warning(f"Breakout scan error {symbol}: {e}")
+            logger.error(f"Breakout error {symbol}: {e}")
 
-    # Sort by score descending — strongest signal first
-    results.sort(key=lambda x: x["score"], reverse=True)
-    top = results[:top_n]
+    # Sort by score descending, return top_n
+    results.sort(key=lambda x: x.get("score", 0), reverse=True)
+    results = results[:top_n]
 
     return jsonify({
-        "count_scanned":  len(symbols),
-        "count_returned": len(top),
-        "top_n":          top_n,
-        "min_score":      min_score,
-        "results":        top,
+        "scan": "breakout",
+        "count": len(results),
+        "scanned": len(symbols),
+        "fetch_ms": fetch_ms,
+        "results": results,
     })
 
+
+# ---------------------------------------------------------------------------
+# Heatmap
+# ---------------------------------------------------------------------------
 @app.route("/api/heatmap")
 def heatmap():
     symbols = all_symbols()
-    # Limit to 20 candles for heatmap — only needs 24h change + quick signal,
-    # not deep history. Keeps the fetch fast on Render free tier.
-    raw = fetch_universe_klines(symbols, interval="1h", limit=20)
+    raw = fetch_universe_klines(symbols, interval="1h", limit=30)
     symbol_candles = {s: payload.get("candles") for s, payload in raw.items() if payload.get("candles")}
 
     # Overlay a quick intraday-style signal per coin using the same 1h
@@ -282,11 +362,8 @@ def heatmap():
     # round-trip just to color/badge each cell with direction+confidence).
     scan_results = {}
     for symbol, candles in symbol_candles.items():
-        if candles and len(candles) >= 15:
-            try:
-                scan_results[symbol] = quick_signal(candles)
-            except Exception as e:
-                logger.warning(f"quick_signal failed for {symbol}: {e}")
+        if candles and len(candles) >= 25:
+            scan_results[symbol] = quick_signal(candles)
 
     data = build_heatmap(symbol_candles, scan_results_by_symbol=scan_results)
     return jsonify(data)
