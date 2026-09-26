@@ -129,34 +129,21 @@ def get_candles_by_interval_for_modes(symbol, modes):
 # Priority coin lists (kept short to avoid Render free-tier timeout)
 # ---------------------------------------------------------------------------
 
-# 30 highest-liquidity / highest-volatility coins for the Breakout scan.
-# Scanning 4 timeframes × 30 coins = 120 kline fetches; fits within 90s.
+# 15 highest-liquidity coins for the Breakout scan.
+# Use all_symbols() format — these must match what price_waterfall expects.
+# Kept small: 4 TF × 15 coins = 60 fetches in parallel → fits Render timeout.
 BREAKOUT_PRIORITY = [
-    # Tier 1 majors
-    "BTCUSD", "ETHUSD", "SOLUSD", "BNBUSD", "XRPUSD",
-    # Large caps with strong breakout tendencies
-    "AVAXUSD", "SUIUSD", "DOTD", "LINKUSD", "MATICUSD",
-    # High-beta / high-volatility
-    "PEPEUSD", "DOGEUSD", "SHIBUSD", "WIFUSD", "BONKUSD",
-    "FLOKIUSD", "MOGUSD", "PONKEUSD", "MEMEUSD", "DOGUSD",
-    # Mid-cap momentum
-    "INJUSD", "TIAUSD", "OPUSD", "ARBUSD", "APTUSD",
-    # DeFi blue-chips
-    "UNIUSD", "AAVEUSD", "JUPUSD",
-    # Narrative / trending
-    "WLDUSD", "PYTHUSD",
+    "BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT",
+    "AVAXUSDT", "SUIUSDT", "LINKUSDT", "DOGEUSDT", "PEPEUSDT",
+    "WIFUSDT", "INJUSDT", "ARBUSDT", "UNIUSDT", "TIAUSDT",
 ]
 
-# 40 coins for the SMC scan (15m only — lighter than breakout).
+# 20 coins for the SMC scan (15m only — lighter than breakout).
 SMC_PRIORITY = [
-    "BTCUSD", "ETHUSD", "SOLUSD", "BNBUSD", "XRPUSD",
-    "AVAXUSD", "SUIUSD", "DOTD", "LINKUSD", "MATICUSD",
-    "PEPEUSD", "DOGEUSD", "SHIBUSD", "WIFUSD", "BONKUSD",
-    "FLOKIUSD", "MOGUSD", "PONKEUSD", "MEMEUSD", "DOGUSD",
-    "INJUSD", "TIAUSD", "OPUSD", "ARBUSD", "APTUSD",
-    "UNIUSD", "AAVEUSD", "JUPUSD", "WLDUSD", "PYTHUSD",
-    "SEIUSD", "ORDIUSD", "STXUSD", "RUNEUSD", "LDOUSD",
-    "ENAUSD", "ATHEUSD", "TRUMPUSD", "POLUSD", "IOTUSD",
+    "BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT",
+    "AVAXUSDT", "SUIUSDT", "LINKUSDT", "DOGEUSDT", "PEPEUSDT",
+    "WIFUSDT", "INJUSDT", "ARBUSDT", "UNIUSDT", "TIAUSDT",
+    "OPUSDT", "APTUSDT", "AAVEUSDT", "WLDUSDT", "BONKUSDT",
 ]
 
 
@@ -304,10 +291,10 @@ def scan_breakout():
     t0 = time.time()
 
     with ThreadPoolExecutor(max_workers=4) as pool:
-        f4h  = pool.submit(fetch_universe_klines, symbols, "4h",  100)
-        f1h  = pool.submit(fetch_universe_klines, symbols, "1h",  100)
-        f15m = pool.submit(fetch_universe_klines, symbols, "15m", 100)
-        f5m  = pool.submit(fetch_universe_klines, symbols, "5m",  100)
+        f4h  = pool.submit(fetch_universe_klines, symbols, "4h",  60)
+        f1h  = pool.submit(fetch_universe_klines, symbols, "1h",  60)
+        f15m = pool.submit(fetch_universe_klines, symbols, "15m", 60)
+        f5m  = pool.submit(fetch_universe_klines, symbols, "5m",  60)
         raw_4h  = f4h.result()
         raw_1h  = f1h.result()
         raw_15m = f15m.result()
